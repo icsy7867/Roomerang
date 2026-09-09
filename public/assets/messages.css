@@ -77,6 +77,10 @@ fieldset input[type="radio"] {
   outline-offset: -6px;
 }
 
+.composer textarea {
+  min-height: 96px;
+}
+
 @media (max-width: 600px) {
   .message { transform: translateX(-8px); }
   .message.mine { transform: translateX(8px); }

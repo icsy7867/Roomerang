@@ -140,7 +140,11 @@
   };
   const poll = async () => {
     if (!token || joining) return;
-    try { const data = await request(`/api/chats/${token}/messages?after=${lastId}`); for (const message of data.messages) await display(message); }
+    try {
+      const data = await request(`/api/chats/${token}/messages?after=${lastId}`);
+      for (const message of data.messages) await display(message);
+      if (data.messages.length) scrollToLatest();
+    }
     catch (error) { if (error.data?.join_required) showJoin(); else console.warn(error.message); }
     setTimeout(poll, 2500);
   };
