@@ -1,0 +1,11 @@
+services:
+  paste-chat:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - paste-chat-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  paste-chat-data:

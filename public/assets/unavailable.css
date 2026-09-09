@@ -1,0 +1,11 @@
+.button-link {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  padding: 9px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #06261f;
+  font-weight: 750;
+}

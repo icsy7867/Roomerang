@@ -1,0 +1,139 @@
+<?php
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/src/bootstrap.php';
+
+use App\ChatService;
+use App\Database;
+use App\Http;
+
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: no-referrer');
+
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
+$method = $_SERVER['REQUEST_METHOD'];
+
+if ($method === 'GET' && preg_match('#^/media/([A-Za-z0-9_-]{43})$#', $path, $imageMatch)) {
+    try {
+        $image = (new ChatService(Database::connection()))->image($imageMatch[1]);
+        if (!$image) throw new RuntimeException('Image not found.');
+        header('Content-Type: ' . $image['mime_type']);
+        header('Content-Length: ' . strlen($image['contents']));
+        header('Cache-Control: private, max-age=3600');
+        echo $image['contents'];
+        exit;
+    } catch (Throwable) {
+        http_response_code(404);
+        exit;
+    }
+}
+
+if (str_starts_with($path, '/api/')) {
+    try {
+        $service = new ChatService(Database::connection());
+        if ($method === 'POST' && $path === '/api/chats') {
+            $data = Http::input();
+            $room = $service->create((string)($data['duration'] ?? ''), (string)($data['history_mode'] ?? ''));
+            Http::json(['room' => $room]);
+        }
+        if (!preg_match('#^/api/chats/([A-Za-z0-9_-]{43})(?:/(join|messages|images))?$#', $path, $matches)) Http::json(['error' => 'Not found.'], 404);
+        $room = $service->room($matches[1]);
+        $action = $matches[2] ?? '';
+        $session = Http::sessionId();
+        if ($method === 'POST' && $action === 'join') {
+            $data = Http::input();
+            $member = $service->join($room, $session, (string)($data['name'] ?? ''));
+            Http::json(['room' => ['expires_at' => (int)$room['expires_at'], 'history_mode' => $room['history_mode']], 'member' => ['display_name' => $member['display_name']], 'messages' => $service->messages($room, $member)]);
+        }
+        $member = $service->member($room, $session);
+        if (!$member) Http::json(['error' => 'Join this chat before viewing messages.', 'join_required' => true], 403);
+        if ($action === 'messages' && $method === 'GET') {
+            Http::json([
+                'room' => ['expires_at' => (int)$room['expires_at'], 'history_mode' => $room['history_mode']],
+                'member' => ['display_name' => $member['display_name']],
+                'messages' => $service->messages($room, $member, (int)($_GET['after'] ?? 0)),
+            ]);
+        }
+        if ($action === 'messages' && $method === 'POST') {
+            $data = Http::input();
+            Http::json(['message' => $service->post($room, $member, (string)($data['body'] ?? ''))], 201);
+        }
+        if ($action === 'images' && $method === 'POST') {
+            Http::json(['message' => $service->postImage($room, $member, $_FILES['image'] ?? [])], 201);
+        }
+        Http::json(['error' => 'Not found.'], 404);
+    } catch (InvalidArgumentException $e) {
+        Http::json(['error' => $e->getMessage()], 422);
+    } catch (\PDOException $e) {
+        error_log($e->getMessage());
+        Http::json(['error' => 'The server could not process this request.'], 500);
+    } catch (RuntimeException $e) {
+        Http::json(['error' => $e->getMessage()], 404);
+    } catch (Throwable $e) {
+        error_log($e->getMessage());
+        Http::json(['error' => 'The server could not process this request.'], 500);
+    }
+}
+
+if ($path !== '/' && !preg_match('#^/chat/[A-Za-z0-9_-]{43}$#', $path)) {
+    http_response_code(404);
+}
+
+$durationChoices = ChatService::durationChoices();
+$defaultDuration = array_key_exists('1h', $durationChoices) ? '1h' : array_key_last($durationChoices);
+?>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>paste-chat</title>
+  <link rel="stylesheet" href="/assets/app.css">
+  <link rel="stylesheet" href="/assets/messages.css">
+  <link rel="stylesheet" href="/assets/unavailable.css">
+</head>
+<body>
+  <main id="app" data-room-token="<?= htmlspecialchars(basename($path), ENT_QUOTES) ?>">
+    <section id="landing" class="panel">
+      <div class="brand"><span class="mark">&gt;_</span><h1>paste-chat</h1></div>
+      <p class="intro">A private, temporary place to paste ideas, Markdown, and code.</p>
+      <form id="create-form">
+        <label>Chat expires after
+          <select name="duration">
+            <?php foreach ($durationChoices as $value => $label): ?>
+              <option value="<?= htmlspecialchars($value, ENT_QUOTES) ?>"<?= $value === $defaultDuration ? ' selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+            <?php endforeach ?>
+          </select>
+        </label>
+        <fieldset><legend>New joiners can see</legend>
+          <label><input type="radio" name="history_mode" value="all" checked> The whole chat history</label>
+          <label><input type="radio" name="history_mode" value="since_join"> Messages sent after they join</label>
+        </fieldset>
+        <button class="primary" type="submit">Create chat</button>
+      </form>
+    </section>
+
+    <section id="unavailable" class="panel" hidden>
+      <div class="brand"><span class="mark">&gt;_</span><h1>paste-chat</h1></div>
+      <h2>Chat unavailable</h2>
+      <p class="intro">This chat no longer exists or has expired.</p>
+      <a class="primary button-link" href="/">Create a new chat</a>
+    </section>
+
+    <section id="chat" hidden>
+      <header class="chat-header"><a href="/" class="brand"><span class="mark">&gt;_</span> paste-chat</a><div id="room-meta"></div><div id="user-meta"></div><button id="copy-link" class="quiet">Copy link</button></header>
+      <div id="messages" aria-live="polite"></div>
+      <form id="message-form" class="composer">
+        <textarea id="message-body" maxlength="12000" placeholder="Write Markdown or paste code…&#10;&#10;Paste or drop an image, or use ```language for code blocks." required></textarea>
+        <div><span id="char-count">0 / 12000</span><button class="primary" type="submit">Send</button></div>
+      </form>
+    </section>
+  </main>
+
+  <dialog id="join-dialog"><form id="join-form" method="dialog"><h2>Join this chat</h2><p>Choose a name for this chat. You can keep the suggested one.</p><label>Your name<input id="join-name" maxlength="40" required></label><button class="primary" type="submit">Join chat</button><p id="join-error" class="error"></p></form></dialog>
+  <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>
