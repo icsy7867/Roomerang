@@ -81,6 +81,12 @@ fieldset input[type="radio"] {
   min-height: 96px;
 }
 
+#master-controls { display: flex; gap: 6px; }
+#active-users { display: grid; gap: 8px; min-width: min(440px, 80vw); }
+.active-user { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.active-user span { flex: 1; font-size: .9rem; }
+.danger { color: #fda4af; }
+
 @media (max-width: 600px) {
   .message { transform: translateX(-8px); }
   .message.mine { transform: translateX(8px); }

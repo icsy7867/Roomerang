@@ -62,6 +62,15 @@ Important routes:
 - `GET /api/chats/{token}/messages/{id}` serves those bytes after membership, expiry, and history checks. Polling returns metadata only.
 - Legacy plaintext message/image routes are disabled. Encrypted rooms are identified by the `encrypted_rooms` table; old rows are retained until expiry cleanup.
 
+Moderation routes are available to the Master member only:
+
+- `GET /api/chats/{token}/moderation` lists sessions seen in the last five minutes. The API exposes a short opaque session label, never the browser cookie or its stored hash.
+- `POST /api/chats/{token}/moderation/read-only` accepts `{ "enabled": true|false }`.
+- `POST /api/chats/{token}/moderation/members/{session_label}/kick` removes a member and permits a later rejoin.
+- `POST /api/chats/{token}/moderation/members/{session_label}/block` marks a member blocked until room expiry.
+
+The first successful `join` inserts `encrypted_rooms.master_session_hash`; subsequent joins cannot claim Master status. `read_only`, `blocked`, and `last_seen_at` are server-side control metadata and are not part of the encrypted message payload.
+
 Room tokens are URL-safe encodings of 32 random bytes. Do not replace them with sequential IDs, short slugs, timestamps, or user-controlled values. The browser-generated AES key is also 32 random bytes and is carried only in the URL fragment. Never log, persist, or include that fragment in an API request.
 
 ## Data model and schema changes
@@ -77,6 +86,8 @@ Expired rooms are inaccessible immediately and are pruned during startup and roo
 `app.js` opens a room by checking the message API before showing the join dialog. Invalid or expired URLs show the unavailable-room panel. Active rooms poll every 2.5 seconds. The current member's messages receive `is_mine` from the server and are styled slightly right of other messages.
 
 The message pane is the scrollable grid row. Preserve `height: 100dvh`, `min-height: 0` on `#chat`, and `min-height: 0`/overflow behavior on `#messages` when changing layout. The composer sends on Enter; Shift+Enter creates a newline. Pasting or dropping an image uploads it immediately and adds an image message.
+
+Master controls are shown only when the current member is the Master. Read-only state is reflected in the header and disables the composer/file picker for other members; the server still enforces it on every encrypted POST. If a session is kicked, polling returns to the join flow. If it is blocked, the room is shown as unavailable for that session.
 
 Encrypted uploads allow 8 MiB content plus bounded envelope overhead. The server cannot inspect MIME types, filenames, or text: those are encrypted. The client renders only PNG/JPEG/GIF/WebP as images and uses download links for other files. Room keys are only in the fragment and browser memory; never send them to the server. `crypto.js` uses a 4-byte big-endian JSON header length, at most 4096 metadata bytes, then content bytes. AAD binds AES-GCM to `paste-chat:v1:` plus room token. Chunking is deferred; version any future wire-format change rather than silently changing the existing envelope. Display names and session identity remain unencrypted metadata.
 

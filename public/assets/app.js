@@ -9,6 +9,8 @@
   let lastId = 0;
   let joining = false;
   let roomKey;
+  let currentRoom;
+  let currentMember;
   let renderQueue = Promise.resolve();
   const objectUrls = new Set();
   window.addEventListener('pagehide', () => { objectUrls.forEach(url => URL.revokeObjectURL(url)); objectUrls.clear(); });
@@ -125,15 +127,27 @@
     await display(message);
     scrollToLatest();
   };
-  const updateMeta = room => {
+  const updateMeta = (room, member = currentMember) => {
+    currentRoom = room;
     const date = new Date(room.expires_at * 1000);
-    document.querySelector('#room-meta').textContent = `Expires ${date.toLocaleString()} · ${room.history_mode === 'all' ? 'full history' : 'from joining'}`;
+    document.querySelector('#room-meta').textContent = `Expires ${date.toLocaleString()} · ${room.history_mode === 'all' ? 'full history' : 'from joining'}${room.read_only ? ' · read-only' : ''}`;
+    const controls = document.querySelector('#master-controls');
+    const master = Boolean(member?.is_master);
+    controls.hidden = !master;
+    if (master) document.querySelector('#readonly-toggle').textContent = room.read_only ? 'Allow messages' : 'Read-only mode';
+    const field = document.querySelector('#message-body');
+    const send = document.querySelector('#message-form button[type="submit"]');
+    const file = document.querySelector('#file-input');
+    const blocked = room.read_only && !master;
+    field.disabled = blocked; send.disabled = blocked; file.disabled = blocked;
+    field.placeholder = blocked ? 'This chat is read-only. Only the Master can post.' : 'Write Markdown or paste code…\nPaste or drop an image, or use ```language for code blocks.';
   };
   const updateUser = member => {
-    document.querySelector('#user-meta').textContent = `You: ${member.display_name}`;
+    currentMember = member;
+    document.querySelector('#user-meta').textContent = `You: ${member.display_name}${member.is_master ? ' · Master' : ''}`;
   };
   const activate = async data => {
-    landing.hidden = true; unavailable.hidden = true; chat.hidden = false; updateMeta(data.room); updateUser(data.member);
+    landing.hidden = true; unavailable.hidden = true; chat.hidden = false; updateUser(data.member); updateMeta(data.room, data.member);
     for (const message of data.messages) await display(message);
     scrollToLatest();
     poll();
@@ -142,10 +156,11 @@
     if (!token || joining) return;
     try {
       const data = await request(`/api/chats/${token}/messages?after=${lastId}`);
+      updateUser(data.member); updateMeta(data.room, data.member);
       for (const message of data.messages) await display(message);
       if (data.messages.length) scrollToLatest();
     }
-    catch (error) { if (error.data?.join_required) showJoin(); else console.warn(error.message); }
+    catch (error) { if (error.data?.join_required) showJoin(); else if (error.data?.moderation_denied) { showUnavailable(); unavailable.querySelector('.intro').textContent = error.message; } else console.warn(error.message); }
     setTimeout(poll, 2500);
   };
   const showJoin = () => {
@@ -168,6 +183,32 @@
       if (error.data?.join_required) showJoin();
       else showUnavailable();
     }
+  };
+
+  const refreshUsers = async () => {
+    const list = document.querySelector('#active-users');
+    const error = document.querySelector('#moderation-error');
+    error.textContent = '';
+    try {
+      const data = await request(`/api/chats/${token}/moderation`);
+      list.replaceChildren();
+      if (!data.members.length) { list.textContent = 'No active users.'; return; }
+      data.members.forEach(user => {
+        const row = document.createElement('div'); row.className = 'active-user';
+        const label = document.createElement('span'); label.textContent = `${user.display_name} · ${user.session_id}${user.is_master ? ' · Master' : ''}`;
+        row.append(label);
+        if (!user.is_master) {
+          const kick = document.createElement('button'); kick.type='button'; kick.className='quiet'; kick.textContent='Kick'; kick.addEventListener('click', () => moderateUser(user.session_id,'kick'));
+          const block = document.createElement('button'); block.type='button'; block.className='quiet danger'; block.textContent='Block'; block.addEventListener('click', () => moderateUser(user.session_id,'block'));
+          row.append(kick,block);
+        }
+        list.append(row);
+      });
+    } catch (e) { error.textContent = e.message; }
+  };
+  const moderateUser = async (sessionId, action) => {
+    try { await request(`/api/chats/${token}/moderation/members/${sessionId}/${action}`, {method:'POST'}); await refreshUsers(); }
+    catch (e) { document.querySelector('#moderation-error').textContent = e.message; }
   };
 
   document.querySelector('#create-form').addEventListener('submit', async event => {
@@ -214,6 +255,13 @@
     catch (error) { alert(error.message); } finally { button.disabled = false; }
   });
   document.querySelector('#copy-link').addEventListener('click', event => copy(location.href, event.currentTarget));
+  document.querySelector('#readonly-toggle').addEventListener('click', async () => {
+    try {
+      const data = await request(`/api/chats/${token}/moderation/read-only`, {method:'POST', body:JSON.stringify({enabled:!currentRoom.read_only})});
+      updateMeta(data.room, currentMember);
+    } catch (e) { alert(e.message); }
+  });
+  document.querySelector('#users-button').addEventListener('click', async () => { document.querySelector('#users-dialog').showModal(); await refreshUsers(); });
   if (token) {
     if (/^[A-Za-z0-9_-]{43}$/.test(token)) openRoom();
     else showUnavailable();

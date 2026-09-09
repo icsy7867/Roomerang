@@ -44,13 +44,17 @@ CREATE INDEX IF NOT EXISTS idx_rooms_expires_at ON rooms(expires_at);
 
 -- Versioned encrypted rooms are separate from any pre-release plaintext rooms.
 CREATE TABLE IF NOT EXISTS encrypted_rooms (
-  room_id INTEGER PRIMARY KEY REFERENCES rooms(id) ON DELETE CASCADE
+  room_id INTEGER PRIMARY KEY REFERENCES rooms(id) ON DELETE CASCADE,
+  master_session_hash TEXT,
+  read_only INTEGER NOT NULL DEFAULT 0 CHECK (read_only IN (0,1))
 );
 CREATE TABLE IF NOT EXISTS encrypted_members (
   room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
   session_hash TEXT NOT NULL,
   display_name TEXT NOT NULL,
   after_id INTEGER NOT NULL,
+  blocked INTEGER NOT NULL DEFAULT 0 CHECK (blocked IN (0,1)),
+  last_seen_at INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY(room_id, session_hash)
 );
 CREATE TABLE IF NOT EXISTS encrypted_messages (

@@ -48,3 +48,4 @@ Mounted data directories and existing database files (including SQLite WAL/SHM f
 - Identity is stored in a secure, HTTP-only browser session cookie. A person selects a display name once per room.
 - “From joining” rooms hide messages written before a member joined.
 - A room key is a shared capability: anyone with the complete URL can decrypt the room, and the server cannot recover it. This protects stored/network content from the application server but does not provide cryptographic sender authentication.
+- The first session that joins becomes the room Master. The Master can enable read-only mode (Master messages still work), inspect sessions active within the last five minutes, kick a session so it may rejoin, or block a session until the room expires.

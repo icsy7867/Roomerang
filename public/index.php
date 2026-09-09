@@ -29,6 +29,27 @@ if (str_starts_with($path, '/api/')) {
             $room = $service->create((string)($data['duration'] ?? ''), (string)($data['history_mode'] ?? ''));
             Http::json(['room' => $room]);
         }
+        if (preg_match('#^/api/chats/([A-Za-z0-9_-]{43})/moderation(?:/(read-only|members/([a-f0-9]{12})/(kick|block)))?$#', $path, $moderation)) {
+            $room = $service->room($moderation[1]);
+            $session = Http::sessionId();
+            $member = $service->member($room, $session);
+            if (!$member) Http::json(['error'=>'Join this chat before managing it.'],403);
+            $member = $service->touch($room,$member);
+            if ($method === 'GET' && ($moderation[2] ?? '') === '') {
+                Http::json(['room'=>$service->roomView($room),'members'=>$service->activeMembers($room,$member)]);
+            }
+            if ($method === 'POST' && ($moderation[2] ?? '') === 'read-only') {
+                $data=Http::input();
+                $room=$service->setReadOnly($room,$member,(bool)($data['enabled'] ?? false));
+                Http::json(['room'=>$service->roomView($room)]);
+            }
+            if ($method === 'POST' && isset($moderation[4])) {
+                if ($moderation[4] === 'kick') $service->kick($room,$member,$moderation[3]);
+                else $service->block($room,$member,$moderation[3]);
+                Http::json(['ok'=>true]);
+            }
+            Http::json(['error'=>'Not found.'],404);
+        }
         if (!preg_match('#^/api/chats/([A-Za-z0-9_-]{43})(?:/(join|messages)(?:/([0-9]+))?)?$#', $path, $matches)) Http::json(['error' => 'Not found.'], 404);
         $room = $service->room($matches[1]);
         $action = $matches[2] ?? '';
@@ -36,10 +57,12 @@ if (str_starts_with($path, '/api/')) {
         if ($method === 'POST' && $action === 'join') {
             $data = Http::input();
             $member = $service->join($room, $session, (string)($data['name'] ?? ''));
-            Http::json(['room' => ['expires_at' => (int)$room['expires_at'], 'history_mode' => $room['history_mode']], 'member' => ['display_name' => $member['display_name']], 'messages' => $service->messages($room, $member)]);
+            $room=$service->room($matches[1]);
+            Http::json(['room' => $service->roomView($room), 'member' => $service->memberView($room,$member), 'messages' => $service->messages($room, $member)]);
         }
         $member = $service->member($room, $session);
         if (!$member) Http::json(['error' => 'Join this chat before viewing messages.', 'join_required' => true], 403);
+        $member = $service->touch($room,$member);
         if (isset($matches[3])) {
             if ($method !== 'GET' || $action !== 'messages') Http::json(['error'=>'Not found.'],404);
             $bytes=$service->content($room,$member,(int)$matches[3]);
@@ -50,8 +73,8 @@ if (str_starts_with($path, '/api/')) {
         }
         if ($action === 'messages' && $method === 'GET') {
             Http::json([
-                'room' => ['expires_at' => (int)$room['expires_at'], 'history_mode' => $room['history_mode']],
-                'member' => ['display_name' => $member['display_name']],
+                'member' => $service->memberView($room,$member),
+                'room' => $service->roomView($room),
                 'messages' => $service->messages($room, $member, (int)($_GET['after'] ?? 0)),
             ]);
         }
@@ -61,6 +84,8 @@ if (str_starts_with($path, '/api/')) {
             Http::json(['message'=>$service->post($room,$member,substr($bytes,0,12),substr($bytes,12))],201);
         }
         Http::json(['error' => 'Not found.'], 404);
+    } catch (App\AccessDeniedException $e) {
+        Http::json(['error' => $e->getMessage(), 'moderation_denied' => true], 403);
     } catch (InvalidArgumentException $e) {
         Http::json(['error' => $e->getMessage()], 422);
     } catch (\PDOException $e) {
@@ -121,7 +146,7 @@ $defaultDuration = array_key_exists('1h', $durationChoices) ? '1h' : array_key_l
     </section>
 
     <section id="chat" hidden>
-      <header class="chat-header"><a href="/" class="brand"><span class="mark">&gt;_</span> paste-chat</a><div id="room-meta"></div><div id="user-meta"></div><button id="copy-link" class="quiet">Copy link</button></header>
+      <header class="chat-header"><a href="/" class="brand"><span class="mark">&gt;_</span> paste-chat</a><div id="room-meta"></div><div id="user-meta"></div><div id="master-controls" hidden><button id="readonly-toggle" class="quiet" type="button"></button><button id="users-button" class="quiet" type="button">Active users</button></div><button id="copy-link" class="quiet">Copy link</button></header>
       <div id="messages" aria-live="polite"></div>
       <form id="message-form" class="composer">
         <textarea id="message-body" maxlength="12000" placeholder="Write Markdown or paste code…&#10;Paste or drop an image, or use ```language for code blocks." required></textarea>
@@ -131,6 +156,7 @@ $defaultDuration = array_key_exists('1h', $durationChoices) ? '1h' : array_key_l
   </main>
 
   <dialog id="join-dialog"><form id="join-form" method="dialog"><h2>Join this chat</h2><p>Choose a name for this chat. You can keep the suggested one.</p><label>Your name<input id="join-name" maxlength="40" required></label><button class="primary" type="submit">Join chat</button><p id="join-error" class="error"></p></form></dialog>
+  <dialog id="users-dialog"><form method="dialog"><h2>Active users</h2><div id="active-users"></div><p id="moderation-error" class="error"></p><button class="quiet" value="cancel">Close</button></form></dialog>
   <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
   <script src="/assets/crypto.js" defer></script>
   <script src="/assets/app.js" defer></script>
