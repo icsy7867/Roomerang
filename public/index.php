@@ -146,7 +146,7 @@ $defaultDuration = array_key_exists('1h', $durationChoices) ? '1h' : array_key_l
     </section>
 
     <section id="chat" hidden>
-      <header class="chat-header"><a href="/" class="brand"><span class="mark">&gt;_</span> paste-chat</a><div id="room-meta"></div><div id="user-meta"></div><div id="master-controls" hidden><button id="readonly-toggle" class="quiet" type="button"></button><button id="users-button" class="quiet" type="button">Active users</button></div><button id="copy-link" class="quiet">Copy link</button></header>
+      <header class="chat-header"><a href="/" class="brand"><span class="mark">&gt;_</span> paste-chat</a><div id="room-meta"></div><div id="user-meta"></div><div id="mode-controls"><button id="readonly-toggle" class="quiet" type="button" disabled></button><div id="master-controls" hidden><button id="users-button" class="quiet" type="button">Active users</button></div></div><button id="copy-link" class="quiet">Copy link</button></header>
       <div id="messages" aria-live="polite"></div>
       <form id="message-form" class="composer">
         <textarea id="message-body" maxlength="12000" placeholder="Write Markdown or paste code…&#10;Paste or drop an image, or use ```language for code blocks." required></textarea>

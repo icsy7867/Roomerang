@@ -132,9 +132,12 @@
     const date = new Date(room.expires_at * 1000);
     document.querySelector('#room-meta').textContent = `Expires ${date.toLocaleString()} · ${room.history_mode === 'all' ? 'full history' : 'from joining'}${room.read_only ? ' · read-only' : ''}`;
     const controls = document.querySelector('#master-controls');
+    const modeButton = document.querySelector('#readonly-toggle');
     const master = Boolean(member?.is_master);
     controls.hidden = !master;
-    if (master) document.querySelector('#readonly-toggle').textContent = room.read_only ? 'Allow messages' : 'Read-only mode';
+    modeButton.textContent = room.read_only ? 'Read-Only Mode' : 'Chat Mode';
+    modeButton.disabled = !master;
+    modeButton.title = master ? 'Click to switch room mode' : 'Room mode (Master only can change this)';
     const field = document.querySelector('#message-body');
     const send = document.querySelector('#message-form button[type="submit"]');
     const file = document.querySelector('#file-input');
