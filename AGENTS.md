@@ -22,6 +22,8 @@ src/bootstrap.php          App autoloader and shared bootstrap
 src/Database.php           PDO SQLite connection configuration
 src/Http.php               JSON responses, input parsing, session cookie handling
 src/ChatService.php        Room, member, message, and image domain operations
+src/EncryptedChatService.php Active encrypted room/member/message storage and history checks
+public/assets/crypto.js    Versioned binary envelope, AES-GCM, and encrypted transport
 public/index.php           Front controller, API routes, and HTML shell
 public/.htaccess            Apache rewrite to the front controller
 public/assets/app.js       Chat behavior, polling, Markdown rendering, uploads
@@ -56,9 +58,9 @@ Important routes:
 - `POST /api/chats` creates a room. JSON fields are `duration` (`10m`, `30m`, `1h`, `12h`, `1d`, `1w`, or `1mo`) and `history_mode` (`all` or `since_join`).
 - `POST /api/chats/{token}/join` creates or reuses the current session's membership and returns visible messages.
 - `GET /api/chats/{token}/messages?after={id}` returns messages visible to the current member for polling.
-- `POST /api/chats/{token}/messages` posts Markdown/plain text JSON.
-- `POST /api/chats/{token}/images` accepts multipart field `image` and posts an image message.
-- `GET /media/{image-token}` serves an image only while its parent room is active.
+- `POST /api/chats/{token}/messages` accepts application/octet-stream: 12-byte nonce followed by ciphertext (including GCM tag).
+- `GET /api/chats/{token}/messages/{id}` serves those bytes after membership, expiry, and history checks. Polling returns metadata only.
+- Legacy plaintext message/image routes are disabled. Encrypted rooms are identified by the `encrypted_rooms` table; old rows are retained until expiry cleanup.
 
 Room tokens and image tokens are URL-safe encodings of 32 random bytes. Do not replace them with sequential IDs, short slugs, timestamps, or user-controlled values.
 
@@ -76,7 +78,7 @@ Expired rooms are inaccessible immediately and are pruned during startup and roo
 
 The message pane is the scrollable grid row. Preserve `height: 100dvh`, `min-height: 0` on `#chat`, and `min-height: 0`/overflow behavior on `#messages` when changing layout. The composer sends on Enter; Shift+Enter creates a newline. Pasting or dropping an image uploads it immediately and adds an image message.
 
-Image uploads are limited by both browser checks and server checks to 8 MB. The server validates the actual MIME type and accepts PNG, JPEG, GIF, and WebP only. Do not trust a filename or browser-provided MIME type for validation.
+Encrypted uploads allow 8 MiB content plus bounded envelope overhead. The server cannot inspect MIME types, filenames, or text: those are encrypted. The client renders only PNG/JPEG/GIF/WebP as images and uses download links for other files. Room keys are only in the fragment and browser memory; never send them to the server. crypto.js uses a 4-byte big-endian JSON header length, at most 4096 metadata bytes, then content bytes. AAD binds AES-GCM to `paste-chat:v1:` plus room token. Chunking is deferred; version any future wire-format change. Display names and session identity remain unencrypted metadata.
 
 ## Coding and security conventions
 

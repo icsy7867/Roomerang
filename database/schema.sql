@@ -41,3 +41,25 @@ CREATE TABLE IF NOT EXISTS images (
 
 CREATE INDEX IF NOT EXISTS idx_messages_room_id ON messages(room_id, id);
 CREATE INDEX IF NOT EXISTS idx_rooms_expires_at ON rooms(expires_at);
+
+-- Versioned encrypted rooms are separate from any pre-release plaintext rooms.
+CREATE TABLE IF NOT EXISTS encrypted_rooms (
+  room_id INTEGER PRIMARY KEY REFERENCES rooms(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS encrypted_members (
+  room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+  session_hash TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  after_id INTEGER NOT NULL,
+  PRIMARY KEY(room_id, session_hash)
+);
+CREATE TABLE IF NOT EXISTS encrypted_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+  session_hash TEXT NOT NULL,
+  nonce BLOB NOT NULL,
+  ciphertext BLOB NOT NULL,
+  created_at INTEGER NOT NULL,
+  UNIQUE(room_id, nonce)
+);
+CREATE INDEX IF NOT EXISTS idx_encrypted_messages_room ON encrypted_messages(room_id, id);

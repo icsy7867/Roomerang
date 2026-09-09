@@ -6,38 +6,30 @@ require dirname(__DIR__) . '/src/bootstrap.php';
 use App\ChatService;
 use App\Database;
 use App\Http;
+use App\EncryptedChatService;
 
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET' && preg_match('#^/media/([A-Za-z0-9_-]{43})$#', $path, $imageMatch)) {
-    try {
-        $image = (new ChatService(Database::connection()))->image($imageMatch[1]);
-        if (!$image) throw new RuntimeException('Image not found.');
-        header('Content-Type: ' . $image['mime_type']);
-        header('Content-Length: ' . strlen($image['contents']));
-        header('Cache-Control: private, max-age=3600');
-        echo $image['contents'];
-        exit;
-    } catch (Throwable) {
-        http_response_code(404);
-        exit;
-    }
+    http_response_code(404);
+    exit;
 }
 
 if (str_starts_with($path, '/api/')) {
     try {
-        $service = new ChatService(Database::connection());
+        $service = new EncryptedChatService(Database::connection());
         if ($method === 'POST' && $path === '/api/chats') {
             $data = Http::input();
             $room = $service->create((string)($data['duration'] ?? ''), (string)($data['history_mode'] ?? ''));
             Http::json(['room' => $room]);
         }
-        if (!preg_match('#^/api/chats/([A-Za-z0-9_-]{43})(?:/(join|messages|images))?$#', $path, $matches)) Http::json(['error' => 'Not found.'], 404);
+        if (!preg_match('#^/api/chats/([A-Za-z0-9_-]{43})(?:/(join|messages)(?:/([0-9]+))?)?$#', $path, $matches)) Http::json(['error' => 'Not found.'], 404);
         $room = $service->room($matches[1]);
         $action = $matches[2] ?? '';
         $session = Http::sessionId();
@@ -48,6 +40,14 @@ if (str_starts_with($path, '/api/')) {
         }
         $member = $service->member($room, $session);
         if (!$member) Http::json(['error' => 'Join this chat before viewing messages.', 'join_required' => true], 403);
+        if (isset($matches[3])) {
+            if ($method !== 'GET' || $action !== 'messages') Http::json(['error'=>'Not found.'],404);
+            $bytes=$service->content($room,$member,(int)$matches[3]);
+            header('Content-Type: application/octet-stream');
+            header('Cache-Control: no-store');
+            echo $bytes;
+            exit;
+        }
         if ($action === 'messages' && $method === 'GET') {
             Http::json([
                 'room' => ['expires_at' => (int)$room['expires_at'], 'history_mode' => $room['history_mode']],
@@ -56,11 +56,9 @@ if (str_starts_with($path, '/api/')) {
             ]);
         }
         if ($action === 'messages' && $method === 'POST') {
-            $data = Http::input();
-            Http::json(['message' => $service->post($room, $member, (string)($data['body'] ?? ''))], 201);
-        }
-        if ($action === 'images' && $method === 'POST') {
-            Http::json(['message' => $service->postImage($room, $member, $_FILES['image'] ?? [])], 201);
+            if (($_SERVER['CONTENT_TYPE'] ?? '') !== 'application/octet-stream') Http::json(['error'=>'Encrypted binary payload required.'],415);
+            $bytes=file_get_contents('php://input',false,null,0,EncryptedChatService::MAX_CIPHERTEXT+13);
+            Http::json(['message'=>$service->post($room,$member,substr($bytes,0,12),substr($bytes,12))],201);
         }
         Http::json(['error' => 'Not found.'], 404);
     } catch (InvalidArgumentException $e) {
@@ -127,13 +125,14 @@ $defaultDuration = array_key_exists('1h', $durationChoices) ? '1h' : array_key_l
       <div id="messages" aria-live="polite"></div>
       <form id="message-form" class="composer">
         <textarea id="message-body" maxlength="12000" placeholder="Write Markdown or paste code…&#10;&#10;Paste or drop an image, or use ```language for code blocks." required></textarea>
-        <div><span id="char-count">0 / 12000</span><button class="primary" type="submit">Send</button></div>
+        <div><span id="char-count">0 / 12000</span><label>Attach file (8 MB)<input id="file-input" type="file"></label><button class="primary" type="submit">Send</button></div>
       </form>
     </section>
   </main>
 
   <dialog id="join-dialog"><form id="join-form" method="dialog"><h2>Join this chat</h2><p>Choose a name for this chat. You can keep the suggested one.</p><label>Your name<input id="join-name" maxlength="40" required></label><button class="primary" type="submit">Join chat</button><p id="join-error" class="error"></p></form></dialog>
   <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
+  <script src="/assets/crypto.js" defer></script>
   <script src="/assets/app.js" defer></script>
 </body>
 </html>

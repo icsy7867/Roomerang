@@ -8,6 +8,10 @@
   const joinDialog = document.querySelector('#join-dialog');
   let lastId = 0;
   let joining = false;
+  let roomKey;
+  let renderQueue = Promise.resolve();
+  const objectUrls = new Set();
+  window.addEventListener('pagehide', () => { objectUrls.forEach(url => URL.revokeObjectURL(url)); objectUrls.clear(); });
 
   const request = async (url, options = {}) => {
     const response = await fetch(url, {headers: {'Content-Type': 'application/json'}, ...options});
@@ -63,7 +67,25 @@
   };
   const scrollToLatest = () => { messages.scrollTop = messages.scrollHeight; };
   const display = message => {
+    renderQueue = renderQueue.then(() => renderMessage(message));
+    return renderQueue;
+  };
+  const renderMessage = async message => {
     if (document.querySelector(`[data-id="${message.id}"]`)) return;
+    let contentError;
+    try {
+      const content = await ChatCrypto.receive(roomKey, token, message.id);
+      if (content.kind === 'text') {
+        message.body = new TextDecoder().decode(content.data);
+      } else {
+        const safeImage = ['image/png','image/jpeg','image/gif','image/webp'].includes(content.mime);
+        const url = URL.createObjectURL(new Blob([content.data], {type:safeImage ? content.mime : 'application/octet-stream'}));
+        objectUrls.add(url);
+        message.file_url = url;
+        message.filename = content.name || 'download';
+        if (safeImage) message.image_url = url;
+      }
+    } catch (_) { contentError = 'Unable to decrypt this message. Check that you have the correct complete chat link.'; }
     const element = document.querySelector('#message-template').content.firstElementChild.cloneNode(true);
     element.dataset.id = message.id;
     element.classList.toggle('mine', message.is_mine === true || message.is_mine === 1);
@@ -71,15 +93,23 @@
     element.querySelector('.author').textContent = message.display_name;
     element.querySelector('time').textContent = new Date(message.created_at * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
     const messageBody = element.querySelector('.message-body');
-    if (message.image_url) {
+    if (contentError) {
+      messageBody.textContent = contentError;
+    } else if (message.image_url) {
       const image = document.createElement('img');
       image.className = 'shared-image';
       image.src = message.image_url;
       image.alt = 'Shared image';
       image.loading = 'lazy';
       messageBody.replaceChildren(image);
-    } else {
+    } else if (!message.file_url) {
       messageBody.innerHTML = renderMarkdown(message.body);
+    }
+    if (message.file_url) {
+      const download = document.createElement('a');
+      download.href = message.file_url; download.download = message.filename;
+      download.textContent = `Download ${message.filename}`;
+      messageBody.append(download);
     }
     const copyButton = element.querySelector('.copy-message');
     if (message.body) copyButton.addEventListener('click', () => copy(message.body, copyButton));
@@ -89,14 +119,10 @@
     lastId = Math.max(lastId, Number(message.id));
   };
   const uploadImage = async file => {
-    if (!file || !file.type.startsWith('image/')) throw new Error('Drop or paste an image file.');
+    if (!file) throw new Error('Select a file.');
     if (file.size > 8 * 1024 * 1024) throw new Error('Images must be no larger than 8 MB.');
-    const form = new FormData();
-    form.append('image', file, file.name || 'pasted-image');
-    const response = await fetch(`/api/chats/${token}/images`, {method: 'POST', body: form});
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'Image upload failed.');
-    display(data.message);
+    const message = await ChatCrypto.send(roomKey,token,await file.arrayBuffer(),{kind:'file',mime:file.type || 'application/octet-stream',name:file.name || 'pasted-image'});
+    await display(message);
     scrollToLatest();
   };
   const updateMeta = room => {
@@ -106,15 +132,15 @@
   const updateUser = member => {
     document.querySelector('#user-meta').textContent = `You: ${member.display_name}`;
   };
-  const activate = data => {
+  const activate = async data => {
     landing.hidden = true; unavailable.hidden = true; chat.hidden = false; updateMeta(data.room); updateUser(data.member);
-    data.messages.forEach(display);
+    for (const message of data.messages) await display(message);
     scrollToLatest();
     poll();
   };
   const poll = async () => {
     if (!token || joining) return;
-    try { const data = await request(`/api/chats/${token}/messages?after=${lastId}`); data.messages.forEach(display); }
+    try { const data = await request(`/api/chats/${token}/messages?after=${lastId}`); for (const message of data.messages) await display(message); }
     catch (error) { if (error.data?.join_required) showJoin(); else console.warn(error.message); }
     setTimeout(poll, 2500);
   };
@@ -130,6 +156,8 @@
     unavailable.hidden = false;
   };
   const openRoom = async () => {
+    try { roomKey = await ChatCrypto.importKey(location.hash.slice(1)); }
+    catch (error) { showUnavailable(); unavailable.querySelector('.intro').textContent = error.message; return; }
     try {
       activate(await request(`/api/chats/${token}/messages`));
     } catch (error) {
@@ -140,7 +168,7 @@
 
   document.querySelector('#create-form').addEventListener('submit', async event => {
     event.preventDefault(); const form = new FormData(event.currentTarget);
-    try { const data = await request('/api/chats', {method: 'POST', body: JSON.stringify(Object.fromEntries(form))}); location.assign(`/chat/${data.room.token}`); }
+    try { const key = ChatCrypto.newKey(); const data = await request('/api/chats', {method: 'POST', body: JSON.stringify(Object.fromEntries(form))}); location.assign(`/chat/${data.room.token}#${key}`); }
     catch (error) { alert(error.message); }
   });
   document.querySelector('#join-form').addEventListener('submit', async event => {
@@ -152,7 +180,7 @@
   document.querySelector('#message-body').addEventListener('keydown', event => {
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
-      composer.requestSubmit();
+      composer.requestSubmit(composer.querySelector('button[type="submit"]'));
     }
   });
   document.querySelector('#message-body').addEventListener('paste', event => {
@@ -162,18 +190,23 @@
     uploadImage(imageItem.getAsFile()).catch(error => alert(error.message));
   });
   const composer = document.querySelector('#message-form');
+  document.querySelector('#file-input').addEventListener('change', async event => {
+    try { await uploadImage(event.target.files[0]); } catch(error) { alert(error.message); }
+    event.target.value = '';
+  });
   composer.addEventListener('dragover', event => { event.preventDefault(); composer.classList.add('drop-target'); });
   composer.addEventListener('dragleave', () => composer.classList.remove('drop-target'));
   composer.addEventListener('drop', event => {
     event.preventDefault(); composer.classList.remove('drop-target');
-    const image = Array.from(event.dataTransfer?.files || []).find(file => file.type.startsWith('image/'));
+    const image = Array.from(event.dataTransfer?.files || [])[0];
     if (image) uploadImage(image).catch(error => alert(error.message));
-    else alert('Drop an image file to share it.');
+    else alert('Drop a file to share it.');
   });
   composer.addEventListener('submit', async event => {
     event.preventDefault(); const field = document.querySelector('#message-body'); const button = event.currentTarget.querySelector('button');
+    if (button.disabled || !field.value.trim()) return;
     button.disabled = true;
-    try { const data = await request(`/api/chats/${token}/messages`, {method: 'POST', body: JSON.stringify({body: field.value})}); display(data.message); field.value = ''; document.querySelector('#char-count').textContent = '0 / 12000'; scrollToLatest(); }
+    try { const message = await ChatCrypto.send(roomKey,token,new TextEncoder().encode(field.value).buffer,{kind:'text',mime:'text/markdown',name:''}); await display(message); field.value = ''; document.querySelector('#char-count').textContent = '0 / 12000'; scrollToLatest(); }
     catch (error) { alert(error.message); } finally { button.disabled = false; }
   });
   document.querySelector('#copy-link').addEventListener('click', event => copy(location.href, event.currentTarget));
