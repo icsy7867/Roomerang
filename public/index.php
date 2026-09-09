@@ -124,7 +124,7 @@ $defaultDuration = array_key_exists('1h', $durationChoices) ? '1h' : array_key_l
       <header class="chat-header"><a href="/" class="brand"><span class="mark">&gt;_</span> paste-chat</a><div id="room-meta"></div><div id="user-meta"></div><button id="copy-link" class="quiet">Copy link</button></header>
       <div id="messages" aria-live="polite"></div>
       <form id="message-form" class="composer">
-        <textarea id="message-body" maxlength="12000" placeholder="Write Markdown or paste code…&#10;&#10;Paste or drop an image, or use ```language for code blocks." required></textarea>
+        <textarea id="message-body" maxlength="12000" placeholder="Write Markdown or paste code…&#10;Paste or drop an image, or use ```language for code blocks." required></textarea>
         <div><span id="char-count">0 / 12000</span><label>Attach file (8 MB)<input id="file-input" type="file"></label><button class="primary" type="submit">Send</button></div>
       </form>
     </section>
