@@ -21,8 +21,8 @@ scripts/healthcheck.php    SQLite PRAGMA integrity_check health command
 src/bootstrap.php          App autoloader and shared bootstrap
 src/Database.php           PDO SQLite connection configuration
 src/Http.php               JSON responses, input parsing, session cookie handling
-src/ChatService.php        Room, member, message, and image domain operations
-src/EncryptedChatService.php Active encrypted room/member/message storage and history checks
+src/ChatService.php        Legacy plaintext room/member/message/image operations retained for cleanup/schema compatibility
+src/EncryptedChatService.php Active encrypted room/member/message storage, size limits, expiry, and history checks
 public/assets/crypto.js    Versioned binary envelope, AES-GCM, and encrypted transport
 public/index.php           Front controller, API routes, and HTML shell
 public/.htaccess            Apache rewrite to the front controller
@@ -33,7 +33,7 @@ public/assets/unavailable.css Expired/invalid room page styling
 README.md                  Operator setup and deployment notes
 ```
 
-There are currently no Composer or npm dependencies. Keep the browser-side Markdown renderer and syntax highlighting safe when changing them: message text must be escaped before being inserted into HTML, and user-provided links must be protocol-validated.
+There are currently no Composer or npm dependencies. Keep the browser-side Markdown renderer and syntax highlighting safe when changing them: message text must be escaped before being inserted into HTML, and user-provided links must be protocol-validated. Do not add a CDN dependency for cryptography; Web Crypto API support is required.
 
 ## Runtime and deployment
 
@@ -51,22 +51,22 @@ Docker's image health check runs `scripts/healthcheck.php`. Podman may ignore OC
 
 ## Request flow and API
 
-`public/index.php` is the only PHP web entry point. Apache rewrites non-file paths to it.
+`public/index.php` is the only PHP web entry point. Apache rewrites non-file paths to it. The active web API is encrypted-only; the older plaintext service and media routes are not a supported way to create or read new messages.
 
 Important routes:
 
 - `POST /api/chats` creates a room. JSON fields are `duration` (`10m`, `30m`, `1h`, `12h`, `1d`, `1w`, or `1mo`) and `history_mode` (`all` or `since_join`).
 - `POST /api/chats/{token}/join` creates or reuses the current session's membership and returns visible messages.
 - `GET /api/chats/{token}/messages?after={id}` returns messages visible to the current member for polling.
-- `POST /api/chats/{token}/messages` accepts application/octet-stream: 12-byte nonce followed by ciphertext (including GCM tag).
+- `POST /api/chats/{token}/messages` accepts `application/octet-stream`: 12-byte nonce followed by ciphertext (including the GCM tag). The request body is opaque to PHP; content type and filename are not trusted from request metadata.
 - `GET /api/chats/{token}/messages/{id}` serves those bytes after membership, expiry, and history checks. Polling returns metadata only.
 - Legacy plaintext message/image routes are disabled. Encrypted rooms are identified by the `encrypted_rooms` table; old rows are retained until expiry cleanup.
 
-Room tokens and image tokens are URL-safe encodings of 32 random bytes. Do not replace them with sequential IDs, short slugs, timestamps, or user-controlled values.
+Room tokens are URL-safe encodings of 32 random bytes. Do not replace them with sequential IDs, short slugs, timestamps, or user-controlled values. The browser-generated AES key is also 32 random bytes and is carried only in the URL fragment. Never log, persist, or include that fragment in an API request.
 
 ## Data model and schema changes
 
-SQLite tables are `rooms`, `members`, `messages`, and `images`. Foreign keys are enabled and room deletion cascades through members, messages, and images. Images are stored as BLOBs in SQLite so deployment remains single-container.
+SQLite contains legacy `rooms`, `members`, `messages`, and `images` tables plus active `encrypted_rooms`, `encrypted_members`, and `encrypted_messages` tables. Encrypted messages store opaque nonce/ciphertext BLOBs; display names, timestamps, and room membership boundaries remain operational metadata. Foreign keys are enabled and room deletion cascades through related rows. New code should use `EncryptedChatService`, not the legacy plaintext methods.
 
 `database/schema.sql` uses `CREATE TABLE IF NOT EXISTS`, so it is safe to apply at startup for new databases. Existing database changes need an explicit migration in `scripts/init.php`; adding a new table is usually enough with the current idempotent schema, but adding or changing columns requires checking `PRAGMA table_info(...)` and applying a guarded `ALTER TABLE`. Never assume that a persistent `/app/data/database.sql` is empty.
 
@@ -78,11 +78,13 @@ Expired rooms are inaccessible immediately and are pruned during startup and roo
 
 The message pane is the scrollable grid row. Preserve `height: 100dvh`, `min-height: 0` on `#chat`, and `min-height: 0`/overflow behavior on `#messages` when changing layout. The composer sends on Enter; Shift+Enter creates a newline. Pasting or dropping an image uploads it immediately and adds an image message.
 
-Encrypted uploads allow 8 MiB content plus bounded envelope overhead. The server cannot inspect MIME types, filenames, or text: those are encrypted. The client renders only PNG/JPEG/GIF/WebP as images and uses download links for other files. Room keys are only in the fragment and browser memory; never send them to the server. crypto.js uses a 4-byte big-endian JSON header length, at most 4096 metadata bytes, then content bytes. AAD binds AES-GCM to `paste-chat:v1:` plus room token. Chunking is deferred; version any future wire-format change. Display names and session identity remain unencrypted metadata.
+Encrypted uploads allow 8 MiB content plus bounded envelope overhead. The server cannot inspect MIME types, filenames, or text: those are encrypted. The client renders only PNG/JPEG/GIF/WebP as images and uses download links for other files. Room keys are only in the fragment and browser memory; never send them to the server. `crypto.js` uses a 4-byte big-endian JSON header length, at most 4096 metadata bytes, then content bytes. AAD binds AES-GCM to `paste-chat:v1:` plus room token. Chunking is deferred; version any future wire-format change rather than silently changing the existing envelope. Display names and session identity remain unencrypted metadata.
+
+When testing encryption, test both browser-side round trips and server-side opacity. `tests/encrypted-storage.php` covers history boundaries, binary storage, expiry, size limits, and the absence of plaintext message rows. Browser tests should verify the complete URL fragment, wrong-key/tamper rejection, text, and exact 8 MiB files. A URL without a valid fragment is unavailable; it must not fall back to a plaintext chat.
 
 ## Coding and security conventions
 
-- Keep domain/database logic in `src/ChatService.php`; keep routing and response formatting in `public/index.php`.
+- Keep active encrypted domain/database logic in `src/EncryptedChatService.php`; keep legacy compatibility/cleanup logic in `src/ChatService.php`; keep routing and response formatting in `public/index.php`.
 - Use prepared PDO statements for all values. Keep associative fetch mode enabled in `src/Database.php`.
 - Escape user text before rendering HTML. Never interpolate raw message text into `innerHTML`.
 - Validate and constrain names, message lengths, room settings, upload size, and upload MIME type server-side even if the browser validates them.

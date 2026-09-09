@@ -30,6 +30,14 @@ Pre-release plaintext rooms are unavailable through the new API, including their
 
 Validation: `podman run --rm --entrypoint php paste-chat:local /app/tests/encrypted-storage.php`.
 
+### Encryption wire format
+
+Room creation generates the server-visible room token and a separate 32-byte AES key in the browser. The application redirects to `/chat/{token}#{key}`; the origin comes from the current request, so a deployment at `https://paste-chat.io` produces links on that host rather than hard-coding localhost. The fragment is never sent in an HTTP request.
+
+`public/assets/crypto.js` uses a versioned binary envelope: a four-byte big-endian metadata length, UTF-8 JSON metadata (`v`, `kind`, `mime`, and `name`), then the content bytes encrypted with AES-256-GCM. The 12-byte nonce is prepended to the encrypted envelope for the message POST. AES-GCM additional authenticated data binds the room token to the ciphertext. The API stores only the nonce/ciphertext BLOB and clear operational metadata such as sender display name, timestamp, and length.
+
+The current 8 MiB limit applies to the original content before encryption. Text is UTF-8 encoded; images and other files use their raw bytes. Filename and MIME metadata are encrypted inside the envelope. Whole-file encryption is intentional for now; the envelope and transport helpers are versioned so a future chunked format can be added without treating ciphertext as text.
+
 The entire container runs as `paste` (UID/GID `1000:1000`), including Apache, PHP, initialization, and health checks. Apache listens on container port **8080**. Kubernetes Services should target port 8080 and may set `runAsNonRoot: true`, `runAsUser: 1000`, and `runAsGroup: 1000`.
 
 Mounted data directories and existing database files (including SQLite WAL/SHM files) must be writable by UID/GID 1000. Existing volumes from older images may be owned by `www-data` (33); update their ownership to `1000:1000` once before upgrading. Startup no longer performs privileged ownership changes. For rootless Podman, use its user-namespace mapping when preparing volume ownership. Fresh named volumes inherit the image's data-directory ownership.
@@ -39,3 +47,4 @@ Mounted data directories and existing database files (including SQLite WAL/SHM f
 - Set `MAXIMUM_DURATION` to `10m`, `30m`, `1h`, `12h`, `1d`, `1w`, or `1m`/`1mo` to limit which expiry choices are offered and accepted. For example, `MAXIMUM_DURATION=1w` prevents rooms longer than one week.
 - Identity is stored in a secure, HTTP-only browser session cookie. A person selects a display name once per room.
 - “From joining” rooms hide messages written before a member joined.
+- A room key is a shared capability: anyone with the complete URL can decrypt the room, and the server cannot recover it. This protects stored/network content from the application server but does not provide cryptographic sender authentication.
