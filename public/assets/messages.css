@@ -83,6 +83,8 @@ fieldset input[type="radio"] {
 
 #mode-controls, #master-controls { display: flex; gap: 6px; align-items: center; }
 #readonly-toggle:disabled { opacity: .85; cursor: default; }
+#readonly-toggle.chat-mode { background: #29466f; border-color: #3a5c89; color: #dbeafe; }
+#readonly-toggle.read-only-mode { background: #4a2933; border-color: #70404b; color: #fecdd3; }
 #active-users { display: grid; gap: 8px; min-width: min(440px, 80vw); }
 .active-user { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .active-user span { flex: 1; font-size: .9rem; }

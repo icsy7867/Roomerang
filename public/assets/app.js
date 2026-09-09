@@ -136,6 +136,8 @@
     const master = Boolean(member?.is_master);
     controls.hidden = !master;
     modeButton.textContent = room.read_only ? 'Read-Only Mode' : 'Chat Mode';
+    modeButton.classList.toggle('chat-mode', !room.read_only);
+    modeButton.classList.toggle('read-only-mode', Boolean(room.read_only));
     modeButton.disabled = !master;
     modeButton.title = master ? 'Click to switch room mode' : 'Room mode (Master only can change this)';
     const field = document.querySelector('#message-body');
