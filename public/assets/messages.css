@@ -184,6 +184,17 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
 .message .author { min-width: 0; overflow-wrap: anywhere; }
 .message header { flex-wrap: wrap; }
 
+#copy-link { display: inline-grid; place-items: center; min-width: 38px; min-height: 34px; padding: 5px 8px; }
+.share-boomerang { display: block; width: 22px; height: 20px; object-fit: contain; transform: rotate(-90deg); transform-origin: center; }
+#copy-link:hover .share-boomerang, #copy-link:focus-visible .share-boomerang { animation: boomerang-throw .72s cubic-bezier(.36,.07,.19,.97); }
+@keyframes boomerang-throw { from { transform: rotate(-90deg); } to { transform: rotate(-810deg); } }
+
+#share-dialog { width: min(560px, calc(100vw - 32px)); }
+.share-dialog { display: grid; gap: 14px; }
+.share-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.share-dialog p { margin: 0; }
+#share-url { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; }
+
 @media (max-width: 1000px) {
   #chat-menu-toggle { display: block; flex: 0 0 auto; width: 44px; height: 44px; padding: 4px; font-size: 24px; background: transparent; }
   #user-meta { margin-left: auto; }

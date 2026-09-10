@@ -309,7 +309,14 @@
     try { const message = await ChatCrypto.send(roomKey,token,new TextEncoder().encode(field.value).buffer,{kind:'text',mime:'text/markdown',name:''}); await display(message); field.value = ''; document.querySelector('#char-count').textContent = '0 / 12000'; scrollToLatest(); }
     catch (error) { alert(error.message); } finally { button.disabled = false; }
   });
-  document.querySelector('#copy-link').addEventListener('click', event => copy(location.href, event.currentTarget));
+  const shareDialog = document.querySelector('#share-dialog');
+  const shareUrl = document.querySelector('#share-url');
+  document.querySelector('#copy-link').addEventListener('click', () => {
+    shareUrl.value = location.href;
+    shareDialog.showModal();
+    requestAnimationFrame(() => shareUrl.select());
+  });
+  document.querySelector('#share-copy').addEventListener('click', event => copy(shareUrl.value, event.currentTarget));
   const menuToggle = document.querySelector('#chat-menu-toggle');
   const menuActions = document.querySelector('#chat-actions');
   const closeMenu = () => { menuToggle.setAttribute('aria-expanded', 'false'); menuActions.classList.remove('is-open'); };
