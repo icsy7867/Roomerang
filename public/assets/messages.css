@@ -173,7 +173,7 @@ fieldset input[type="radio"] {
 
 html { min-height: 100%; background: var(--bg); }
 body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: fixed; }
-#app { min-height: 100dvh; }
+#app { min-height: 100dvh; display: flow-root; }
 .brand-logo { display: block !important; width: 30px !important; height: 28px !important; min-width: 30px; max-width: 30px !important; min-height: 28px; max-height: 28px !important; object-fit: contain; transform: rotate(-90deg); flex: 0 0 30px !important; }
 #chat, .chat-header, .composer { min-width: 0; max-width: 100%; }
 .chat-header { position: relative; }
