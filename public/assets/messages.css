@@ -200,6 +200,7 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
   #user-meta { margin-left: auto; }
   #chat-actions { display: none; position: absolute; z-index: 10; right: 12px; top: calc(100% + 4px); width: min(260px, calc(100vw - 24px)); padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 8px 24px #0006; }
   #chat-actions.is-open { display: grid; gap: 8px; }
+  #copy-link .share-boomerang { animation: boomerang-throw .72s cubic-bezier(.36,.07,.19,.97) infinite; }
   #mode-controls, #master-controls { display: grid; width: 100%; gap: 8px; }
   #chat-actions button { width: 100%; min-height: 44px; font-size: .9rem; white-space: normal; }
   .composer textarea { font-size: 16px; }
