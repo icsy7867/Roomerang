@@ -1,10 +1,10 @@
-# paste-chat contributor guide
+# Roomerang contributor guide
 
 This repository is the complete source for the `paste-chat` single-container web application. The repository root is copied to `/app` in the container. The public web root is `/app/public`; persistent runtime data belongs in `/app/data`.
 
 ## Project purpose
 
-paste-chat is a temporary, link-only chat application. A visitor creates a room with an expiry and a history visibility mode, then shares the generated URL. Visitors identify themselves through a secure browser session cookie and choose a display name for each room. Rooms expire after at most one month.
+Roomerang is a temporary, link-only chat application. A visitor creates a room with an expiry and a history visibility mode, then shares the generated URL. Visitors identify themselves through a secure browser session cookie and choose a display name for each room. Rooms expire after at most one month.
 
 The application is intentionally self-contained: PHP, Apache, browser JavaScript, CSS, and SQLite are all in this repository. Do not add a required external service or runtime CDN dependency without an explicit product decision.
 
@@ -16,6 +16,8 @@ compose.yaml               Local Docker Compose deployment
 docker-entrypoint.sh       Database initialization and ownership setup
 docker/uploads.ini         PHP upload limits for image sharing
 database/schema.sql        Idempotent SQLite schema template
+images/roomerang.svg       Source vector logo; Dockerfile copies it into the public asset directory
+images/roomerang.png       Raster source logo retained for design/export use
 scripts/init.php           Startup schema application and integrity check
 scripts/healthcheck.php    SQLite PRAGMA integrity_check health command
 src/bootstrap.php          App autoloader and shared bootstrap

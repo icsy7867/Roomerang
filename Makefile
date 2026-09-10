@@ -1,5 +1,5 @@
-IMAGE ?= paste-chat:local
-CONTAINER ?= paste-chat
+IMAGE ?= roomerang:local
+CONTAINER ?= roomerang
 
 .PHONY: build run healthcheck
 

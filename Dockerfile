@@ -9,6 +9,7 @@ RUN apt-get update \
 WORKDIR /app
 RUN groupadd --gid 1000 paste && useradd --uid 1000 --gid 1000 --create-home --shell /usr/sbin/nologin paste
 COPY --chown=paste:paste . /app
+COPY --chown=paste:paste images/roomerang.svg /app/public/assets/roomerang.svg
 COPY --chown=paste:paste docker/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 RUN mkdir -p /app/data \
     && chown -R paste:paste /app/data \

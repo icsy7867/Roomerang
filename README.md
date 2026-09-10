@@ -1,4 +1,4 @@
-# paste-chat
+# Roomerang
 
 A disposable, link-only chat room for sharing Markdown and code snippets. It runs as one PHP/Apache container and uses SQLite for persistent room/message state.
 
@@ -11,13 +11,13 @@ docker compose up --build
 Open `http://localhost:8080`. To retain data with plain Docker or Podman, mount a writable volume at `/app/data`:
 
 ```sh
-docker run --rm -p 8080:8080 -v paste-chat-data:/app/data paste-chat
+docker run --rm -p 8080:8080 -v roomerang-data:/app/data roomerang
 ```
 
 When building with Podman, use the Docker image format so the Dockerfile health check is retained. Podman’s default OCI format emits a warning and drops `HEALTHCHECK` metadata:
 
 ```sh
-podman build --format docker -t paste-chat:local .
+podman build --format docker -t roomerang:local .
 # or: make build
 ```
 

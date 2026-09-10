@@ -1,11 +1,11 @@
 services:
-  paste-chat:
+  roomerang:
     build: .
     ports:
       - "8080:8080"
     volumes:
-      - paste-chat-data:/app/data
+      - roomerang-data:/app/data
     restart: unless-stopped
 
 volumes:
-  paste-chat-data:
+  roomerang-data:
