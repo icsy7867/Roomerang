@@ -24,6 +24,20 @@ final class ChatService
         );
     }
 
+    /** Return a configured, currently permitted default duration for the room form. */
+    public static function defaultDuration(): string
+    {
+        $choices = self::durationChoices();
+        $configuredDefault = strtolower(trim((string)(getenv('DEFAULT_DURATION') ?: '1h')));
+        $configuredDefault = $configuredDefault === '1m' ? '1mo' : $configuredDefault;
+
+        if (array_key_exists($configuredDefault, $choices)) {
+            return $configuredDefault;
+        }
+
+        return array_key_exists('1h', $choices) ? '1h' : (string)array_key_last($choices);
+    }
+
     public function create(string $duration, string $history): array
     {
         if (!isset(self::durationChoices()[$duration]) || !in_array($history, ['all', 'since_join'], true)) throw new \InvalidArgumentException('Invalid room settings.');

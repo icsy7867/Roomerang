@@ -25,6 +25,26 @@ Use `make build IMAGE=roomerang:dev` to choose a different local tag.
 
 The database is `/app/data/database.sql`. On startup the container creates it when missing, applies the bundled schema in `database/schema.sql`, and refuses to start if SQLite's integrity check fails. The image uses no external runtime services.
 
+## Environment variables
+
+Set these when starting the container or under `environment:` in Compose:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PASTE_CHAT_DB` | `/app/data/database.sql` | SQLite database path. Its parent directory must be writable by UID/GID 1000. |
+| `PASTE_CHAT_MAX_MESSAGE_LENGTH` | `12000` | Maximum character count for a text message. |
+| `MAXIMUM_DURATION` | `1mo` | Longest duration offered and accepted for new rooms: `10m`, `30m`, `1h`, `12h`, `1d`, `1w`, `1m`, or `1mo`. |
+| `DEFAULT_DURATION` | `1h` | Initially selected duration on the landing page. It accepts the same values as `MAXIMUM_DURATION` and must not exceed that maximum. Invalid or disallowed values fall back to one hour when available, otherwise the longest allowed duration. |
+
+For example, to default new rooms to one day while allowing rooms up to a week:
+
+```sh
+docker run --rm -p 8080:8080 \
+  -e MAXIMUM_DURATION=1w \
+  -e DEFAULT_DURATION=1d \
+  -v roomerang-data:/app/data roomerang
+```
+
 ## Notes
 
 ## Client-side encryption

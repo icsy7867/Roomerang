@@ -18,6 +18,7 @@ RUN mkdir -p /app/data \
 ENV PASTE_CHAT_DB=/app/data/database.sql
 ENV PASTE_CHAT_MAX_MESSAGE_LENGTH=12000
 ENV MAXIMUM_DURATION=1mo
+ENV DEFAULT_DURATION=1h
 
 RUN sed -ri 's!/var/www/html!/app/public!g' /etc/apache2/sites-available/000-default.conf \
     && sed -ri 's!<Directory /var/www/>!<Directory /app/public/>!g; s!AllowOverride None!AllowOverride All!g' /etc/apache2/apache2.conf \

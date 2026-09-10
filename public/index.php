@@ -104,7 +104,7 @@ if ($path !== '/' && !preg_match('#^/chat/[A-Za-z0-9_-]{43}$#', $path)) {
 }
 
 $durationChoices = ChatService::durationChoices();
-$defaultDuration = array_key_exists('1h', $durationChoices) ? '1h' : array_key_last($durationChoices);
+$defaultDuration = ChatService::defaultDuration();
 ?>
 <!doctype html>
 <html lang="en">

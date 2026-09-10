@@ -51,7 +51,7 @@ The image uses PHP 8.3 with Apache, `pdo_sqlite`, and `mbstring`. All runtime pr
 
 If deployment uses a reverse proxy, its request-body size must exceed the 8 MiB original-file limit because encrypted uploads add a small envelope and AES-GCM tag. NGINX should use at least `client_max_body_size 9m;`. Proxies can return HTML for HTTP 413; `crypto.js` must never call `response.json()` blindly for upload failures.
 
-The database path is controlled by `PASTE_CHAT_DB` and defaults to `/app/data/database.sql`. `MAXIMUM_DURATION` controls the longest duration a new room can request; it accepts `10m`, `30m`, `1h`, `12h`, `1d`, `1w`, and `1m`/`1mo` (month). The data directory must be writable by the Apache worker. The database file is deliberately not checked into source control; the schema template is the source of truth for fresh installations.
+The database path is controlled by `PASTE_CHAT_DB` and defaults to `/app/data/database.sql`. `MAXIMUM_DURATION` controls the longest duration a new room can request; it accepts `10m`, `30m`, `1h`, `12h`, `1d`, `1w`, and `1m`/`1mo` (month). `DEFAULT_DURATION` chooses the initially selected landing-page duration and must be one of the durations still allowed by that maximum; it defaults to `1h`, then falls back to the longest allowed choice when needed. The data directory must be writable by the Apache worker. The database file is deliberately not checked into source control; the schema template is the source of truth for fresh installations.
 
 Docker's image health check runs `scripts/healthcheck.php`. Podman may ignore OCI health-check metadata depending on the image format, but startup initialization still validates SQLite before Apache starts.
 
