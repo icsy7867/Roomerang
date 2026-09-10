@@ -41,10 +41,21 @@ window.ChatCrypto = (() => {
     if(wire.byteLength<32 || wire.byteLength>MAX+4132) throw new Error('Invalid encrypted payload.');
     return crypto.subtle.decrypt({name:'AES-GCM',iv:wire.slice(0,12),additionalData:encoder.encode('paste-chat:v1:'+room)},key,wire.slice(12));
   }
+  async function responseData(response) {
+    const text=await response.text();
+    if (!text) return {};
+    try { return JSON.parse(text); } catch (_) { return {}; }
+  }
   async function send(key,room,data,metadata) {
     const wire=await encryptContent(key,room,envelope(data,metadata));
     const response=await fetch(`/api/chats/${room}/messages`,{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:wire});
-    const result=await response.json(); if(!response.ok) throw new Error(result.error || 'Send failed.'); return result.message;
+    const result=await responseData(response);
+    if (!response.ok) {
+      if (response.status===413) throw new Error('This upload is larger than the server or reverse proxy allows. Choose a smaller file or increase the proxy request-size limit.');
+      if (response.status===403) throw new Error(result.error || 'You cannot post in this chat. It may be read-only, or your session no longer has access.');
+      throw new Error(result.error || `Upload failed (HTTP ${response.status}).`);
+    }
+    return result.message;
   }
   async function receive(key,room,id) {
     const response=await fetch(`/api/chats/${room}/messages/${id}`,{cache:'no-store'});
