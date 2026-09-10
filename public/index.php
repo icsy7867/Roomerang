@@ -114,7 +114,7 @@ $defaultDuration = array_key_exists('1h', $durationChoices) ? '1h' : array_key_l
   <meta name="theme-color" content="#111827">
   <title>Roomerang</title>
   <link rel="stylesheet" href="/assets/app.css?v=roomerang-2">
-  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-3">
+  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-4">
   <link rel="stylesheet" href="/assets/unavailable.css?v=roomerang-2">
 </head>
 <body>

@@ -186,7 +186,7 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
 
 #copy-link { display: inline-grid; place-items: center; min-width: 38px; min-height: 34px; padding: 5px 8px; }
 .share-boomerang { display: block; width: 22px; height: 20px; object-fit: contain; transform: rotate(-90deg); transform-origin: center; }
-#copy-link:hover .share-boomerang, #copy-link:focus-visible .share-boomerang { animation: boomerang-throw .72s cubic-bezier(.36,.07,.19,.97); }
+#copy-link:hover .share-boomerang, #copy-link:focus-visible .share-boomerang { animation: boomerang-throw .72s cubic-bezier(.36,.07,.19,.97) infinite; }
 @keyframes boomerang-throw { from { transform: rotate(-90deg); } to { transform: rotate(-810deg); } }
 
 #share-dialog { width: min(560px, calc(100vw - 32px)); }
