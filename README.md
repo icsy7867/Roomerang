@@ -14,6 +14,15 @@ Open `http://localhost:8080`. To retain data with plain Docker or Podman, mount 
 docker run --rm -p 8080:8080 -v paste-chat-data:/app/data paste-chat
 ```
 
+When building with Podman, use the Docker image format so the Dockerfile health check is retained. Podman’s default OCI format emits a warning and drops `HEALTHCHECK` metadata:
+
+```sh
+podman build --format docker -t paste-chat:local .
+# or: make build
+```
+
+Use `make build IMAGE=roomerang:dev` to choose a different local tag.
+
 The database is `/app/data/database.sql`. On startup the container creates it when missing, applies the bundled schema in `database/schema.sql`, and refuses to start if SQLite's integrity check fails. The image uses no external runtime services.
 
 ## Notes

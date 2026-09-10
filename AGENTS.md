@@ -43,6 +43,8 @@ Build and run locally with:
 docker compose up --build
 ```
 
+For direct Podman builds, use `podman build --format docker -t paste-chat:local .` or `make build`. Podman’s default OCI image format does not support Dockerfile `HEALTHCHECK` metadata and emits a warning while dropping it; this is a build-format limitation, not a failed health check.
+
 The image uses PHP 8.3 with Apache, `pdo_sqlite`, and `mbstring`. All runtime processes use `paste` (UID/GID 1000), including startup and health checks. Apache listens on port 8080. Ownership of application/configuration and Apache runtime directories is set during the image build. The entrypoint initializes SQLite and starts Apache without runtime chown or root privileges. Mounted data must already be writable by UID/GID 1000; older www-data-owned volumes need an operator-managed ownership migration.
 
 If deployment uses a reverse proxy, its request-body size must exceed the 8 MiB original-file limit because encrypted uploads add a small envelope and AES-GCM tag. NGINX should use at least `client_max_body_size 9m;`. Proxies can return HTML for HTTP 413; `crypto.js` must never call `response.json()` blindly for upload failures.
