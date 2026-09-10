@@ -13,7 +13,9 @@
   let currentMember;
   let renderQueue = Promise.resolve();
   const objectUrls = new Set();
-  window.addEventListener('pagehide', () => { objectUrls.forEach(url => URL.revokeObjectURL(url)); objectUrls.clear(); });
+  let previewUrl;
+  const clearPreviewUrl = () => { if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = undefined; } };
+  window.addEventListener('pagehide', () => { clearPreviewUrl(); objectUrls.forEach(url => URL.revokeObjectURL(url)); objectUrls.clear(); });
 
   const request = async (url, options = {}) => {
     const response = await fetch(url, {headers: {'Content-Type': 'application/json'}, ...options});
@@ -71,6 +73,7 @@
   const previewFile = (blob, name, mime) => {
     const dialog = document.querySelector('#file-preview');
     const content = document.querySelector('#preview-content');
+    clearPreviewUrl();
     document.querySelector('#preview-title').textContent = name || 'File preview';
     content.textContent = 'Loading preview…';
     const reader = new FileReader();
@@ -81,8 +84,9 @@
         image.className = 'file-preview-image'; image.src = reader.result; image.alt = name || 'Shared image';
         content.replaceChildren(image);
       } else if (mime === 'application/pdf') {
+        previewUrl = URL.createObjectURL(new Blob([reader.result], {type:'application/pdf'}));
         const frame = document.createElement('iframe');
-        frame.className = 'file-preview-pdf'; frame.src = reader.result; frame.sandbox = '';
+        frame.className = 'file-preview-pdf'; frame.src = previewUrl;
         frame.title = name || 'PDF preview';
         content.replaceChildren(frame);
       } else if (mime.startsWith('text/')) {
@@ -93,7 +97,8 @@
         content.textContent = 'Preview is available for images and text files. Use the message download link for this file.';
       }
     };
-    if (mime.startsWith('image/') || mime === 'application/pdf') reader.readAsDataURL(blob);
+    if (mime.startsWith('image/')) reader.readAsDataURL(blob);
+    else if (mime === 'application/pdf') reader.readAsArrayBuffer(blob);
     else if (mime.startsWith('text/')) reader.readAsText(blob);
     else reader.readAsArrayBuffer(blob);
     dialog.showModal();
@@ -302,6 +307,7 @@
     catch (error) { alert(error.message); } finally { button.disabled = false; }
   });
   document.querySelector('#copy-link').addEventListener('click', event => copy(location.href, event.currentTarget));
+  document.querySelector('#file-preview').addEventListener('close', clearPreviewUrl);
   document.querySelector('#readonly-toggle').addEventListener('click', async () => {
     try {
       const data = await request(`/api/chats/${token}/moderation/read-only`, {method:'POST', body:JSON.stringify({enabled:!currentRoom.read_only})});
