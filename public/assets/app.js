@@ -68,6 +68,31 @@
     const previous = button.textContent; button.textContent = 'Copied'; setTimeout(() => { button.textContent = previous; }, 1200);
   };
   const scrollToLatest = () => { messages.scrollTop = messages.scrollHeight; };
+  const previewFile = (blob, name, mime) => {
+    const dialog = document.querySelector('#file-preview');
+    const content = document.querySelector('#preview-content');
+    document.querySelector('#preview-title').textContent = name || 'File preview';
+    content.textContent = 'Loading preview…';
+    const reader = new FileReader();
+    reader.onerror = () => { content.textContent = 'This file could not be previewed.'; };
+    reader.onload = () => {
+      if (mime.startsWith('image/')) {
+        const image = document.createElement('img');
+        image.className = 'file-preview-image'; image.src = reader.result; image.alt = name || 'Shared image';
+        content.replaceChildren(image);
+      } else if (mime.startsWith('text/')) {
+        const text = document.createElement('pre');
+        text.className = 'file-preview-text'; text.textContent = reader.result;
+        content.replaceChildren(text);
+      } else {
+        content.textContent = 'Preview is available for images and text files. Use the message download link for this file.';
+      }
+    };
+    if (mime.startsWith('image/')) reader.readAsDataURL(blob);
+    else if (mime.startsWith('text/')) reader.readAsText(blob);
+    else reader.readAsArrayBuffer(blob);
+    dialog.showModal();
+  };
   const display = message => {
     renderQueue = renderQueue.then(() => renderMessage(message));
     return renderQueue;
@@ -81,11 +106,12 @@
         message.body = new TextDecoder().decode(content.data);
       } else {
         const safeImage = ['image/png','image/jpeg','image/gif','image/webp'].includes(content.mime);
-        const url = URL.createObjectURL(new Blob([content.data], {type:safeImage ? content.mime : 'application/octet-stream'}));
+        const blob = new Blob([content.data], {type:safeImage ? content.mime : 'application/octet-stream'});
+        const url = URL.createObjectURL(blob);
         objectUrls.add(url);
         message.file_url = url;
         message.filename = content.name || 'download';
-        if (safeImage) message.image_url = url;
+        if (safeImage) { message.image_url = url; message.preview_blob = blob; message.mime = content.mime; }
       }
     } catch (_) { contentError = 'Unable to decrypt this message. Check that you have the correct complete chat link.'; }
     const element = document.querySelector('#message-template').content.firstElementChild.cloneNode(true);
@@ -103,6 +129,10 @@
       image.src = message.image_url;
       image.alt = 'Shared image';
       image.loading = 'lazy';
+      image.tabIndex = 0;
+      image.title = 'Click to preview';
+      image.addEventListener('click', () => previewFile(message.preview_blob, message.filename, message.mime));
+      image.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); previewFile(message.preview_blob, message.filename, message.mime); } });
       messageBody.replaceChildren(image);
     } else if (!message.file_url) {
       messageBody.innerHTML = renderMarkdown(message.body);
