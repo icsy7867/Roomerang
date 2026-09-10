@@ -104,3 +104,72 @@ fieldset input[type="radio"] {
   .message { transform: translateX(-8px); }
   .message.mine { transform: translateX(8px); }
 }
+
+@media (max-width: 1000px) {
+  .chat-header {
+    min-height: 50px;
+    gap: 7px;
+    padding: 7px 12px;
+  }
+
+  .chat-header .brand {
+    flex: 0 0 auto;
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .chat-header #room-meta { display: none; }
+
+  #user-meta {
+    margin-left: auto;
+    font-size: .8rem;
+    white-space: nowrap;
+  }
+
+  #mode-controls, #master-controls { gap: 4px; }
+
+  #mode-controls button,
+  #copy-link {
+    padding: 6px 8px;
+    font-size: .75rem;
+    white-space: nowrap;
+  }
+
+  #messages {
+    gap: 10px;
+    padding: 12px max(12px, calc((100vw - 920px) / 2));
+  }
+
+  .message header { padding: 6px 9px; }
+  .message-body { padding: 9px; }
+
+  .composer {
+    gap: 10px;
+    padding: 10px 12px max(5px, env(safe-area-inset-bottom));
+  }
+
+  .composer textarea { min-height: 86px; }
+
+  .composer div {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: end;
+  }
+
+  #char-count { white-space: nowrap; }
+  .composer div label { min-width: 0; font-size: .78rem; }
+  #file-input { min-width: 0; max-width: 100%; font-size: .78rem; }
+}
+
+@media (max-width: 600px) {
+  .chat-header .brand { font-size: 0; }
+  .chat-header .brand .mark { font-size: 1.15rem; }
+  #user-meta { font-size: .75rem; }
+  #users-button, #copy-link { font-size: 0; }
+  #users-button::after { content: 'Users'; font-size: .75rem; }
+  #copy-link::after { content: 'Copy'; font-size: .75rem; }
+  #messages { padding-inline: 10px; }
+  .message { transform: translateX(-4px); }
+  .message.mine { transform: translateX(4px); }
+}
