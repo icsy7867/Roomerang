@@ -67,3 +67,16 @@ CREATE TABLE IF NOT EXISTS encrypted_messages (
   UNIQUE(room_id, nonce)
 );
 CREATE INDEX IF NOT EXISTS idx_encrypted_messages_room ON encrypted_messages(room_id, id);
+
+CREATE TABLE IF NOT EXISTS system_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+INSERT OR IGNORE INTO system_settings(key, value) VALUES ('maintenance_mode', '0');
+
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  session_hash TEXT PRIMARY KEY,
+  csrf_token TEXT NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires_at ON admin_sessions(expires_at);

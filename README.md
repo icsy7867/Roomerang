@@ -35,6 +35,8 @@ Set these when starting the container or under `environment:` in Compose:
 | `PASTE_CHAT_MAX_MESSAGE_LENGTH` | `12000` | Maximum character count for a text message. |
 | `MAXIMUM_DURATION` | `1mo` | Longest duration offered and accepted for new rooms: `10m`, `30m`, `1h`, `12h`, `1d`, `1w`, `1m`, or `1mo`. |
 | `DEFAULT_DURATION` | `1h` | Initially selected duration on the landing page. It accepts the same values as `MAXIMUM_DURATION` and must not exceed that maximum. Invalid or disallowed values fall back to one hour when available, otherwise the longest allowed duration. |
+| `ADMIN_PASSWORD` | unset | Enables the password-protected `/admin` operator console. Use a long random value and set it only through deployment secrets. |
+| `ADMIN_PASSWORD_HASH` | unset | Preferred alternative to `ADMIN_PASSWORD`: a PHP `password_hash()` value. When both are set, this value is used. |
 
 For example, to default new rooms to one day while allowing rooms up to a week:
 
@@ -44,6 +46,14 @@ docker run --rm -p 8080:8080 \
   -e DEFAULT_DURATION=1d \
   -v roomerang-data:/app/data roomerang
 ```
+
+## Administration and backups
+
+Set `ADMIN_PASSWORD` or `ADMIN_PASSWORD_HASH` to enable `/admin`; without either, the route returns 404. The console reports total, active, expired, and empty chat counts plus maximum and average message counts for active chats. It also exposes integrity status, expiry pruning, a global maintenance mode, and a consistent SQLite backup download.
+
+Maintenance mode leaves existing joined members able to read rooms but prevents room creation, new joins, messages, and room moderation. Enable it before downloading a backup. Room expiry remains enforced while maintenance mode is on.
+
+Restore is deliberately an operator procedure rather than a browser upload. Enable maintenance, stop every application container using the database, replace the database with a verified SQLite backup, remove any stale `database.sql-wal` and `database.sql-shm` files, then start the application. The startup integrity check will refuse a corrupt database.
 
 ## Notes
 

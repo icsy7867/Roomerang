@@ -1,0 +1,15 @@
+.admin-panel { width: min(840px, calc(100% - 32px)); margin: 5vh auto; }
+.admin-login { max-width: 420px; }
+.admin-header { display: flex; justify-content: space-between; align-items: start; gap: 20px; margin-bottom: 28px; }
+.admin-header h2 { margin: 8px 0 0; }
+.admin-header form, .admin-card form { display: block; }
+.admin-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.admin-stats div, .admin-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: #101929; }
+.admin-stats dt { color: var(--muted); font-size: .85rem; }
+.admin-stats dd { margin: 5px 0 0; font-size: 1.5rem; font-weight: 750; }
+.admin-card { margin-top: 18px; }
+.admin-card h3 { margin-top: 0; }
+.admin-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.admin-notice { color: var(--accent); }
+.admin-help { color: var(--muted); font-size: .9rem; }
+@media (max-width: 600px) { .admin-panel { margin: 16px auto; padding: 22px; } .admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -14,6 +14,7 @@ final class EncryptedChatService
 
     public function create(string $duration, string $history): array
     {
+        SystemState::assertWritable($this->db);
         $this->db->beginTransaction();
         try {
             $room = (new ChatService($this->db))->create($duration, $history);
@@ -41,6 +42,7 @@ final class EncryptedChatService
     public function touch(array $room, array $member): array
     {
         $this->assertMember($member);
+        if (SystemState::maintenanceEnabled($this->db)) return $member;
         $now=time();
         $q=$this->db->prepare('UPDATE encrypted_members SET last_seen_at=? WHERE room_id=? AND session_hash=? AND blocked=0');
         $q->execute([$now,$room['id'],$member['session_hash']]);
@@ -71,9 +73,10 @@ final class EncryptedChatService
         $existing=$this->member($room,$session);
         if ($existing) {
             $this->assertMember($existing);
-            $this->touch($room,$existing);
+            if (!SystemState::maintenanceEnabled($this->db)) $this->touch($room,$existing);
             return $this->member($room,$session);
         }
+        SystemState::assertWritable($this->db);
         // A single write statement records the exact message boundary, even within one second.
         $now=time();
         $q=$this->db->prepare('INSERT OR IGNORE INTO encrypted_members(room_id,session_hash,display_name,after_id,last_seen_at) VALUES (?,?,?,(SELECT COALESCE(MAX(id),0) FROM encrypted_messages WHERE room_id=?),?)');
@@ -113,6 +116,7 @@ final class EncryptedChatService
     public function requireCanPost(array $room, array $member): void
     {
         $this->assertMember($member);
+        SystemState::assertWritable($this->db);
         if ((int)$room['read_only'] === 1 && !$this->isMaster($room,$member)) {
             throw new AccessDeniedException('This chat is read-only. Only the Master can post.');
         }
@@ -120,6 +124,7 @@ final class EncryptedChatService
     public function setReadOnly(array $room, array $member, bool $enabled): array
     {
         $this->requireMaster($room,$member);
+        SystemState::assertWritable($this->db);
         $q=$this->db->prepare('UPDATE encrypted_rooms SET read_only=? WHERE room_id=?');
         $q->execute([$enabled ? 1 : 0,$room['id']]);
         $room['read_only']=$enabled ? 1 : 0;
@@ -138,6 +143,7 @@ final class EncryptedChatService
     private function moderate(array $room, array $member, string $target, bool $blocked): void
     {
         $this->requireMaster($room,$member);
+        SystemState::assertWritable($this->db);
         $q=$this->db->prepare('SELECT session_hash FROM encrypted_members WHERE room_id=?');
         $q->execute([$room['id']]);
         $targetHash=null;
