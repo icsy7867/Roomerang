@@ -326,8 +326,13 @@
   });
   document.addEventListener('click', event => { if (!menuActions.contains(event.target) && !menuToggle.contains(event.target)) closeMenu(); });
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && menuToggle.getAttribute('aria-expanded') === 'true') { closeMenu(); menuToggle.focus(); } });
-  menuActions.addEventListener('click', event => { if (event.target.closest('button')) closeMenu(); });
-  document.querySelector('#file-preview').addEventListener('close', clearPreviewUrl);
+  menuActions.addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (button && button.id !== 'readonly-toggle') closeMenu();
+  });
+  const filePreview = document.querySelector('#file-preview');
+  filePreview.addEventListener('click', event => { if (event.target === filePreview) filePreview.close(); });
+  filePreview.addEventListener('close', clearPreviewUrl);
   document.querySelector('#readonly-toggle').addEventListener('click', async () => {
     try {
       const data = await request(`/api/chats/${token}/moderation/read-only`, {method:'POST', body:JSON.stringify({enabled:!currentRoom.read_only})});
