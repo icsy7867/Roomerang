@@ -82,6 +82,9 @@ fieldset input[type="radio"] {
   min-height: 96px;
 }
 
+.pending-attachment { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: #101929; color: var(--muted); font-size: .85rem; }
+.pending-attachment span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 #mode-controls, #master-controls { display: flex; gap: 6px; align-items: center; }
 #readonly-toggle:disabled { opacity: .85; cursor: default; }
 #readonly-toggle.chat-mode { background: #29466f; border-color: #3a5c89; color: #dbeafe; }
@@ -160,6 +163,7 @@ fieldset input[type="radio"] {
   #char-count { white-space: nowrap; }
   .composer div label { min-width: 0; font-size: .78rem; }
   #file-input { min-width: 0; max-width: 100%; font-size: .78rem; }
+  .composer .pending-attachment { display: flex; grid-template-columns: none; }
 }
 
 @media (max-width: 600px) {

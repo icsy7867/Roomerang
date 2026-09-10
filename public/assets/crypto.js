@@ -1,4 +1,4 @@
-/* v1 binary envelope and transport. Chunking can introduce v2 without changing callers. */
+/* Versioned binary envelope and transport. */
 window.ChatCrypto = (() => {
   const encoder = new TextEncoder(), decoder = new TextDecoder('utf-8', {fatal:true});
   const MAX = 8 * 1024 * 1024;
@@ -27,9 +27,11 @@ window.ChatCrypto = (() => {
     const length=new DataView(bytes).getUint32(0);
     if(length>4096 || length+4>bytes.byteLength) throw new Error('Invalid content metadata.');
     const metadata=JSON.parse(decoder.decode(bytes.slice(4,4+length)));
-    if(metadata.v!==1 || !['text','file'].includes(metadata.kind) || typeof metadata.mime!=='string' || typeof metadata.name!=='string') throw new Error('Unsupported content version.');
+    const supported = (metadata.v === 1 && ['text','file'].includes(metadata.kind)) || (metadata.v === 2 && metadata.kind === 'attachment');
+    if(!supported || typeof metadata.mime!=='string' || typeof metadata.name!=='string') throw new Error('Unsupported content version.');
     const data=bytes.slice(4+length);
     if(data.byteLength>MAX) throw new Error('Content exceeds 8 MB.');
+    if (metadata.kind === 'attachment' && (!Number.isInteger(metadata.text_bytes) || metadata.text_bytes < 0 || metadata.text_bytes > data.byteLength)) throw new Error('Invalid attachment content.');
     return {...metadata,data};
   }
   async function encryptContent(key, room, data) {

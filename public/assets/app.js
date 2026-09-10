@@ -14,6 +14,7 @@
   let renderQueue = Promise.resolve();
   const objectUrls = new Set();
   let previewUrl;
+  let pendingAttachment;
   const clearPreviewUrl = () => { if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = undefined; } };
   window.addEventListener('pagehide', () => { clearPreviewUrl(); objectUrls.forEach(url => URL.revokeObjectURL(url)); objectUrls.clear(); });
 
@@ -70,6 +71,17 @@
     const previous = button.textContent; button.textContent = 'Copied'; setTimeout(() => { button.textContent = previous; }, 1200);
   };
   const scrollToLatest = () => { messages.scrollTop = messages.scrollHeight; };
+  const pendingAttachmentView = document.querySelector('#pending-attachment');
+  const updatePendingAttachment = () => {
+    pendingAttachmentView.hidden = !pendingAttachment;
+    document.querySelector('#pending-attachment-name').textContent = pendingAttachment ? `${pendingAttachment.name || 'attachment'} (${Math.ceil(pendingAttachment.size / 1024)} KB)` : '';
+  };
+  const stageAttachment = file => {
+    if (!file) throw new Error('Select a file.');
+    if (file.size > 8 * 1024 * 1024) throw new Error('Attachments must be no larger than 8 MB.');
+    pendingAttachment = file;
+    updatePendingAttachment();
+  };
   const previewFile = (blob, name, mime) => {
     const dialog = document.querySelector('#file-preview');
     const content = document.querySelector('#preview-content');
@@ -115,8 +127,13 @@
       if (content.kind === 'text') {
         message.body = new TextDecoder().decode(content.data);
       } else {
+        let fileData = content.data;
+        if (content.kind === 'attachment') {
+          message.body = new TextDecoder().decode(content.data.slice(0, content.text_bytes));
+          fileData = content.data.slice(content.text_bytes);
+        }
         const safeImage = ['image/png','image/jpeg','image/gif','image/webp'].includes(content.mime);
-        const blob = new Blob([content.data], {type:content.mime || 'application/octet-stream'});
+        const blob = new Blob([fileData], {type:content.mime || 'application/octet-stream'});
         const url = URL.createObjectURL(blob);
         objectUrls.add(url);
         message.file_url = url;
@@ -134,7 +151,10 @@
     const messageBody = element.querySelector('.message-body');
     if (contentError) {
       messageBody.textContent = contentError;
-    } else if (message.image_url) {
+    } else if (message.body) {
+      messageBody.innerHTML = renderMarkdown(message.body);
+    }
+    if (!contentError && message.image_url) {
       const image = document.createElement('img');
       image.className = 'shared-image';
       image.src = message.image_url;
@@ -144,9 +164,7 @@
       image.title = 'Click to preview';
       image.addEventListener('click', () => previewFile(message.preview_blob, message.filename, message.mime));
       image.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); previewFile(message.preview_blob, message.filename, message.mime); } });
-      messageBody.replaceChildren(image);
-    } else if (!message.file_url) {
-      messageBody.innerHTML = renderMarkdown(message.body);
+      messageBody.append(image);
     }
     if (message.file_url) {
       const download = document.createElement('a');
@@ -166,13 +184,6 @@
     element.querySelectorAll('.code-copy').forEach(button => button.addEventListener('click', () => copy(decodeURIComponent(button.dataset.code), button)));
     messages.append(element);
     lastId = Math.max(lastId, Number(message.id));
-  };
-  const uploadImage = async file => {
-    if (!file) throw new Error('Select a file.');
-    if (file.size > 8 * 1024 * 1024) throw new Error('Images must be no larger than 8 MB.');
-    const message = await ChatCrypto.send(roomKey,token,await file.arrayBuffer(),{kind:'file',mime:file.type || 'application/octet-stream',name:file.name || 'pasted-image'});
-    await display(message);
-    scrollToLatest();
   };
   const updateMeta = (room, member = currentMember) => {
     currentRoom = room;
@@ -287,26 +298,41 @@
     const imageItem = Array.from(event.clipboardData?.items || []).find(item => item.type.startsWith('image/'));
     if (!imageItem) return;
     event.preventDefault();
-    uploadImage(imageItem.getAsFile()).catch(error => alert(error.message));
+    try { stageAttachment(imageItem.getAsFile()); } catch (error) { alert(error.message); }
   });
   const composer = document.querySelector('#message-form');
-  document.querySelector('#file-input').addEventListener('change', async event => {
-    try { await uploadImage(event.target.files[0]); } catch(error) { alert(error.message); }
+  document.querySelector('#file-input').addEventListener('change', event => {
+    try { stageAttachment(event.target.files[0]); } catch(error) { alert(error.message); }
     event.target.value = '';
   });
+  document.querySelector('#clear-attachment').addEventListener('click', () => { pendingAttachment = undefined; updatePendingAttachment(); });
   composer.addEventListener('dragover', event => { event.preventDefault(); composer.classList.add('drop-target'); });
   composer.addEventListener('dragleave', () => composer.classList.remove('drop-target'));
   composer.addEventListener('drop', event => {
     event.preventDefault(); composer.classList.remove('drop-target');
     const image = Array.from(event.dataTransfer?.files || [])[0];
-    if (image) uploadImage(image).catch(error => alert(error.message));
+    if (image) { try { stageAttachment(image); } catch (error) { alert(error.message); } }
     else alert('Drop a file to share it.');
   });
   composer.addEventListener('submit', async event => {
     event.preventDefault(); const field = document.querySelector('#message-body'); const button = event.currentTarget.querySelector('button');
-    if (button.disabled || !field.value.trim()) return;
+    if (button.disabled || (!field.value.trim() && !pendingAttachment)) return;
     button.disabled = true;
-    try { const message = await ChatCrypto.send(roomKey,token,new TextEncoder().encode(field.value).buffer,{kind:'text',mime:'text/markdown',name:''}); await display(message); field.value = ''; document.querySelector('#char-count').textContent = '0 / 12000'; scrollToLatest(); }
+    try {
+      let data, metadata;
+      if (pendingAttachment) {
+        const text = new TextEncoder().encode(field.value);
+        const file = new Uint8Array(await pendingAttachment.arrayBuffer());
+        data = new Uint8Array(text.byteLength + file.byteLength);
+        data.set(text); data.set(file, text.byteLength);
+        metadata = {v:2, kind:'attachment', mime:pendingAttachment.type || 'application/octet-stream', name:pendingAttachment.name || 'attachment', text_bytes:text.byteLength};
+      } else {
+        data = new TextEncoder().encode(field.value);
+        metadata = {kind:'text',mime:'text/markdown',name:''};
+      }
+      const message = await ChatCrypto.send(roomKey,token,data.buffer,metadata);
+      await display(message); field.value = ''; pendingAttachment = undefined; updatePendingAttachment(); document.querySelector('#char-count').textContent = '0 / 12000'; scrollToLatest();
+    }
     catch (error) { alert(error.message); } finally { button.disabled = false; }
   });
   const shareDialog = document.querySelector('#share-dialog');
