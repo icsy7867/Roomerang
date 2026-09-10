@@ -87,6 +87,8 @@ Expired rooms are inaccessible immediately and are pruned during startup and roo
 
 ## Frontend behavior
 
+At widths up to 1000px, header actions live in the `#chat-actions` dropdown, controlled by `#chat-menu-toggle` and `aria-expanded`. Keep the Master-only hidden attribute effective despite layout display rules. Use the real button labels; do not append alternative labels with CSS pseudo-elements. The username is an ellipsized badge with the full name/role in its title. Keep background painting non-repeating and retain browser zoom accessibility.
+
 `app.js` opens a room by checking the message API before showing the join dialog. Invalid or expired URLs show the unavailable-room panel. Active rooms poll every 2.5 seconds. The current member's messages receive `is_mine` from the server and are styled slightly right of other messages.
 
 The message pane is the scrollable grid row. Preserve `height: 100dvh`, `min-height: 0` on `#chat`, and `min-height: 0`/overflow behavior on `#messages` when changing layout. The composer sends on Enter; Shift+Enter creates a newline. Pasting or dropping an image uploads it immediately and adds an image message.

@@ -196,7 +196,10 @@
   };
   const updateUser = member => {
     currentMember = member;
-    document.querySelector('#user-meta').textContent = `You: ${member.display_name}${member.is_master ? ' · Master' : ''}`;
+    const badge = document.querySelector('#user-meta');
+    badge.textContent = member.display_name;
+    badge.title = `${member.display_name}${member.is_master ? ' · Master' : ''}`;
+    badge.setAttribute('aria-label', `Your username: ${badge.title}`);
   };
   const activate = async data => {
     landing.hidden = true; unavailable.hidden = true; chat.hidden = false; updateUser(data.member); updateMeta(data.room, data.member);
@@ -307,6 +310,16 @@
     catch (error) { alert(error.message); } finally { button.disabled = false; }
   });
   document.querySelector('#copy-link').addEventListener('click', event => copy(location.href, event.currentTarget));
+  const menuToggle = document.querySelector('#chat-menu-toggle');
+  const menuActions = document.querySelector('#chat-actions');
+  const closeMenu = () => { menuToggle.setAttribute('aria-expanded', 'false'); menuActions.classList.remove('is-open'); };
+  menuToggle.addEventListener('click', () => {
+    const open = menuToggle.getAttribute('aria-expanded') !== 'true';
+    menuToggle.setAttribute('aria-expanded', String(open)); menuActions.classList.toggle('is-open', open);
+  });
+  document.addEventListener('click', event => { if (!menuActions.contains(event.target) && !menuToggle.contains(event.target)) closeMenu(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && menuToggle.getAttribute('aria-expanded') === 'true') { closeMenu(); menuToggle.focus(); } });
+  menuActions.addEventListener('click', event => { if (event.target.closest('button')) closeMenu(); });
   document.querySelector('#file-preview').addEventListener('close', clearPreviewUrl);
   document.querySelector('#readonly-toggle').addEventListener('click', async () => {
     try {
