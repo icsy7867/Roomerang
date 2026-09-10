@@ -80,6 +80,11 @@
         const image = document.createElement('img');
         image.className = 'file-preview-image'; image.src = reader.result; image.alt = name || 'Shared image';
         content.replaceChildren(image);
+      } else if (mime === 'application/pdf') {
+        const frame = document.createElement('iframe');
+        frame.className = 'file-preview-pdf'; frame.src = reader.result; frame.sandbox = '';
+        frame.title = name || 'PDF preview';
+        content.replaceChildren(frame);
       } else if (mime.startsWith('text/')) {
         const text = document.createElement('pre');
         text.className = 'file-preview-text'; text.textContent = reader.result;
@@ -88,7 +93,7 @@
         content.textContent = 'Preview is available for images and text files. Use the message download link for this file.';
       }
     };
-    if (mime.startsWith('image/')) reader.readAsDataURL(blob);
+    if (mime.startsWith('image/') || mime === 'application/pdf') reader.readAsDataURL(blob);
     else if (mime.startsWith('text/')) reader.readAsText(blob);
     else reader.readAsArrayBuffer(blob);
     dialog.showModal();
@@ -106,12 +111,13 @@
         message.body = new TextDecoder().decode(content.data);
       } else {
         const safeImage = ['image/png','image/jpeg','image/gif','image/webp'].includes(content.mime);
-        const blob = new Blob([content.data], {type:safeImage ? content.mime : 'application/octet-stream'});
+        const blob = new Blob([content.data], {type:content.mime || 'application/octet-stream'});
         const url = URL.createObjectURL(blob);
         objectUrls.add(url);
         message.file_url = url;
         message.filename = content.name || 'download';
-        if (safeImage) { message.image_url = url; message.preview_blob = blob; message.mime = content.mime; }
+        message.preview_blob = blob; message.mime = content.mime;
+        if (safeImage) message.image_url = url;
       }
     } catch (_) { contentError = 'Unable to decrypt this message. Check that you have the correct complete chat link.'; }
     const element = document.querySelector('#message-template').content.firstElementChild.cloneNode(true);
@@ -142,6 +148,12 @@
       download.href = message.file_url; download.download = message.filename;
       download.textContent = `Download ${message.filename}`;
       messageBody.append(download);
+      if (!message.image_url && (message.mime === 'application/pdf' || message.mime?.startsWith('text/'))) {
+        const preview = document.createElement('button');
+        preview.type = 'button'; preview.className = 'quiet file-preview-button'; preview.textContent = 'Preview';
+        preview.addEventListener('click', () => previewFile(message.preview_blob, message.filename, message.mime));
+        messageBody.append(preview);
+      }
     }
     const copyButton = element.querySelector('.copy-message');
     if (message.body) copyButton.addEventListener('click', () => copy(message.body, copyButton));

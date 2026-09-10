@@ -96,7 +96,9 @@ fieldset input[type="radio"] {
 .preview-dialog header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 #preview-content { display: grid; place-items: center; min-height: 120px; }
 .file-preview-image { display: block; max-width: min(100%, 1000px); max-height: calc(100dvh - 180px); object-fit: contain; }
+.file-preview-pdf { width: min(100%, 1000px); height: calc(100dvh - 210px); min-height: 500px; border: 0; background: #fff; }
 .file-preview-text { width: 100%; max-height: calc(100dvh - 220px); overflow: auto; margin: 0; padding: 14px; border-radius: 7px; background: var(--code); white-space: pre-wrap; overflow-wrap: anywhere; }
+.file-preview-button { margin-left: 10px; }
 
 @media (max-width: 600px) {
   .message { transform: translateX(-8px); }
