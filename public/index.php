@@ -113,14 +113,14 @@ $defaultDuration = array_key_exists('1h', $durationChoices) ? '1h' : array_key_l
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111827">
   <title>Roomerang</title>
-  <link rel="stylesheet" href="/assets/app.css">
-  <link rel="stylesheet" href="/assets/messages.css">
-  <link rel="stylesheet" href="/assets/unavailable.css">
+  <link rel="stylesheet" href="/assets/app.css?v=roomerang-2">
+  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-2">
+  <link rel="stylesheet" href="/assets/unavailable.css?v=roomerang-2">
 </head>
 <body>
   <main id="app" data-room-token="<?= htmlspecialchars(basename($path), ENT_QUOTES) ?>">
     <section id="landing" class="panel">
-      <div class="brand"><img class="brand-logo" src="/assets/roomerang.svg" alt=""><h1>Roomerang</h1></div>
+      <div class="brand"><img class="brand-logo" src="/assets/roomerang.svg?v=1" alt=""><h1>Roomerang</h1></div>
       <p class="intro">A private, temporary place to paste ideas, Markdown, and code.</p>
       <form id="create-form">
         <label>Chat expires after
@@ -139,7 +139,7 @@ $defaultDuration = array_key_exists('1h', $durationChoices) ? '1h' : array_key_l
     </section>
 
     <section id="unavailable" class="panel" hidden>
-      <div class="brand"><img class="brand-logo" src="/assets/roomerang.svg" alt=""><h1>Roomerang</h1></div>
+      <div class="brand"><img class="brand-logo" src="/assets/roomerang.svg?v=1" alt=""><h1>Roomerang</h1></div>
       <h2>Chat unavailable</h2>
       <p class="intro">This chat no longer exists or has expired.</p>
       <a class="primary button-link" href="/">Create a new chat</a>
@@ -147,7 +147,7 @@ $defaultDuration = array_key_exists('1h', $durationChoices) ? '1h' : array_key_l
 
     <section id="chat" hidden>
       <header class="chat-header">
-        <a href="/" class="brand"><img class="brand-logo" src="/assets/roomerang.svg" alt=""><span class="brand-name">Roomerang</span></a>
+        <a href="/" class="brand"><img class="brand-logo" src="/assets/roomerang.svg?v=1" alt=""><span class="brand-name">Roomerang</span></a>
         <div id="room-meta"></div><div id="user-meta"></div>
         <button id="chat-menu-toggle" type="button" aria-label="Chat options" aria-controls="chat-actions" aria-expanded="false"><span aria-hidden="true">☰</span></button>
         <div id="chat-actions">
