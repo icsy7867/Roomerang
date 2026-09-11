@@ -84,6 +84,7 @@
     pendingAttachment = file;
     updatePendingAttachment();
   };
+  updatePendingAttachment();
   const previewFile = (blob, name, mime) => {
     const dialog = document.querySelector('#file-preview');
     const content = document.querySelector('#preview-content');
@@ -317,7 +318,7 @@
     else alert('Drop a file to share it.');
   });
   composer.addEventListener('submit', async event => {
-    event.preventDefault(); const field = document.querySelector('#message-body'); const button = event.currentTarget.querySelector('button');
+    event.preventDefault(); const field = document.querySelector('#message-body'); const button = event.currentTarget.querySelector('button[type="submit"]');
     if (button.disabled || (!field.value.trim() && !pendingAttachment)) return;
     button.disabled = true;
     try {
