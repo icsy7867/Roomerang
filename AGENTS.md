@@ -14,7 +14,7 @@ The application is intentionally self-contained: PHP, Apache, browser JavaScript
 Dockerfile                 PHP/Apache image definition
 compose.yaml               Local Docker Compose deployment
 docker-entrypoint.sh       Database initialization and ownership setup
-docker/uploads.ini         PHP upload limits for image sharing
+docker/uploads.ini         PHP upload limits for encrypted file sharing
 database/schema.sql        Idempotent SQLite schema template
 images/roomerang.svg       Source vector logo; Dockerfile copies it into the public asset directory
 images/roomerang.png       Raster source logo retained for design/export use
@@ -62,8 +62,8 @@ Docker's image health check runs `scripts/healthcheck.php`. Podman may ignore OC
 Important routes:
 
 - `POST /api/chats` creates a room. JSON fields are `duration` (`10m`, `30m`, `1h`, `12h`, `1d`, `1w`, or `1mo`) and `history_mode` (`all` or `since_join`).
-- `POST /api/chats/{token}/join` creates or reuses the current session's membership and returns visible messages.
-- `GET /api/chats/{token}/messages?after={id}` returns messages visible to the current member for polling.
+- `POST /api/chats/{token}/join` creates or reuses the current session's membership and returns the latest visible 25-message page.
+- `GET /api/chats/{token}/messages` returns the latest visible 25-message page; `?after={id}` returns newer messages for polling; `?before={id}` returns the preceding visible 25-message page. Each result is chronological even when selected backward.
 - `POST /api/chats/{token}/messages` accepts `application/octet-stream`: 12-byte nonce followed by ciphertext (including the GCM tag). The request body is opaque to PHP; content type and filename are not trusted from request metadata.
 - `GET /api/chats/{token}/messages/{id}` serves those bytes after membership, expiry, and history checks. Polling returns metadata only.
 - Legacy plaintext message/image routes are disabled. Encrypted rooms are identified by the `encrypted_rooms` table; old rows are retained until expiry cleanup.
@@ -93,15 +93,15 @@ At widths up to 1000px, header actions live in the `#chat-actions` dropdown, con
 
 The room-share control (`#copy-link`) opens `#share-dialog`; its boomerang icon is decorative and its tooltip/accessible name explains the action. Populate the dialog from `location.href` and copy that complete value, including the URL fragment. The fragment contains the room key, so never reconstruct a share URL from server-visible path data or send the fragment to an API.
 
-`app.js` opens a room by checking the message API before showing the join dialog. Invalid or expired URLs show the unavailable-room panel. Active rooms poll every 2.5 seconds. The current member's messages receive `is_mine` from the server and are styled slightly right of other messages.
+`app.js` opens a room by checking the message API before showing the join dialog. Invalid or expired URLs show the unavailable-room panel. A join first fetches the newest 25 messages; up to four encrypted message bodies are downloaded and decrypted concurrently while placeholders retain chronological order. Scrolling to the top requests older pages of 25 without moving the reader's viewport. Active rooms poll every 2.5 seconds independently of history downloads. The current member's messages receive `is_mine` from the server and are styled slightly right of other messages. Confirmed outgoing messages render from their local encrypted content without a second download.
 
-The message pane is the scrollable grid row. Preserve `height: 100dvh`, `min-height: 0` on `#chat`, and `min-height: 0`/overflow behavior on `#messages` when changing layout. The composer sends on Enter; Shift+Enter creates a newline. Pasting or dropping an image uploads it immediately and adds an image message.
+The message pane is the scrollable grid row. Preserve `height: 100dvh`, `min-height: 0` on `#chat`, and `min-height: 0`/overflow behavior on `#messages` when changing layout. The composer sends on Enter; Shift+Enter creates a newline. Choosing, pasting, or dropping a file stages one pending attachment; it is sent only after Send is pressed and can be combined with text in the same message. The pending-attachment row must be hidden when no attachment is staged.
 
 Master controls are shown only when the current member is the Master. Read-only state is reflected in the header and disables the composer/file picker for other members; the server still enforces it on every encrypted POST. If a session is kicked, polling returns to the join flow. If it is blocked, the room is shown as unavailable for that session.
 
-Encrypted uploads allow 8 MiB content plus bounded envelope overhead. The server cannot inspect MIME types, filenames, or text: those are encrypted. The client renders only PNG/JPEG/GIF/WebP as images and uses download links for other files. Image cards remain contained; clicking an image opens a larger local preview through `FileReader` on its decrypted Blob. PDFs and text attachments receive a Preview button; PDF bytes are read with `FileReader` and placed behind a temporary local `blob:` URL for the browser’s native PDF viewer. Revoke the preview URL on dialog close and page exit. Room keys are only in the fragment and browser memory; never send them to the server. `crypto.js` uses a 4-byte big-endian JSON header length, at most 4096 metadata bytes, then content bytes. AAD binds AES-GCM to `paste-chat:v1:` plus room token. Chunking is deferred; version any future wire-format change rather than silently changing the existing envelope. Display names and session identity remain unencrypted metadata.
+Encrypted uploads allow 8 MiB content plus bounded envelope overhead. The server cannot inspect MIME types, filenames, or text: those are encrypted. The client renders only PNG/JPEG/GIF/WebP as images and uses download links for other files. Image cards remain contained; clicking an image opens a larger local preview through `FileReader` on its decrypted Blob. PDFs and text attachments receive a Preview button; PDF bytes are read with `FileReader` and placed behind a temporary local `blob:` URL for the browser’s native PDF viewer. Revoke the preview URL on dialog close and page exit. Room keys are only in the fragment and browser memory; never send them to the server. `crypto.js` uses a 4-byte big-endian JSON header length, at most 4096 metadata bytes, then content bytes. Version 1 envelopes hold text-only or file-only content; version 2 attachment envelopes hold the encrypted text-byte boundary followed by text and file bytes. AAD binds AES-GCM to `paste-chat:v1:` plus room token. Chunking is deferred; version any future wire-format change rather than silently changing the existing envelope. Display names and session identity remain unencrypted metadata.
 
-When testing encryption, test both browser-side round trips and server-side opacity. `tests/encrypted-storage.php` covers history boundaries, binary storage, expiry, size limits, and the absence of plaintext message rows. Browser tests should verify the complete URL fragment, wrong-key/tamper rejection, text, and exact 8 MiB files. A URL without a valid fragment is unavailable; it must not fall back to a plaintext chat.
+When testing encryption, test both browser-side round trips and server-side opacity. `tests/encrypted-storage.php` covers history boundaries, backward pagination, live cursors, binary storage, expiry, size limits, and the absence of plaintext message rows. Browser tests should verify the complete URL fragment, wrong-key/tamper rejection, text, attachment-only and combined text-and-file messages, exact 8 MiB files, initial latest-page loading, and older-history scrolling. A URL without a valid fragment is unavailable; it must not fall back to a plaintext chat.
 
 ## Coding and security conventions
 
