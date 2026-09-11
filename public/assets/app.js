@@ -74,6 +74,7 @@
   const pendingAttachmentView = document.querySelector('#pending-attachment');
   const updatePendingAttachment = () => {
     pendingAttachmentView.hidden = !pendingAttachment;
+    pendingAttachmentView.classList.toggle('is-pending', Boolean(pendingAttachment));
     document.querySelector('#pending-attachment-name').textContent = pendingAttachment ? `${pendingAttachment.name || 'attachment'} (${Math.ceil(pendingAttachment.size / 1024)} KB)` : '';
   };
   const stageAttachment = file => {

@@ -189,7 +189,7 @@ $defaultDuration = ChatService::defaultDuration();
   <meta name="theme-color" content="#111827">
   <title>Roomerang</title>
   <link rel="stylesheet" href="/assets/app.css?v=roomerang-2">
-  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-5">
+  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-6">
   <link rel="stylesheet" href="/assets/unavailable.css?v=roomerang-2">
 </head>
 <body>
@@ -245,6 +245,6 @@ $defaultDuration = ChatService::defaultDuration();
   <dialog id="file-preview"><form method="dialog" class="preview-dialog"><header><strong id="preview-title">File preview</strong><button class="quiet" value="cancel">Close</button></header><div id="preview-content"></div></form></dialog>
   <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
   <script src="/assets/crypto.js?v=roomerang-2" defer></script>
-  <script src="/assets/app.js?v=roomerang-6" defer></script>
+  <script src="/assets/app.js?v=roomerang-7" defer></script>
 </body>
 </html>
