@@ -87,6 +87,16 @@ fieldset input[type="radio"] {
 .pending-attachment span { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pending-attachment button { flex: 0 0 auto; }
 
+@media (min-width: 1001px) {
+  .composer { display: grid; grid-template-columns: minmax(0, 1fr) 240px; grid-template-areas: 'message controls' 'attachment controls'; gap: 8px 14px; padding-block: 10px; }
+  .composer textarea { grid-area: message; min-height: 76px; max-height: 120px; }
+  .composer .pending-attachment { grid-area: attachment; }
+  #message-form > div:last-child { display: grid; grid-area: controls; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; gap: 6px 8px; align-items: end; }
+  #message-form > div:last-child label { grid-column: 1 / -1; grid-row: 1; gap: 2px; font-size: .75rem; }
+  #message-form > div:last-child #char-count { grid-column: 1; grid-row: 2; }
+  #message-form > div:last-child button { grid-column: 2; grid-row: 2; }
+}
+
 #mode-controls, #master-controls { display: flex; gap: 6px; align-items: center; }
 #readonly-toggle:disabled { opacity: .85; cursor: default; }
 #readonly-toggle.chat-mode { background: #29466f; border-color: #3a5c89; color: #dbeafe; }
