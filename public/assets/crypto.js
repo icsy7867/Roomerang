@@ -60,9 +60,27 @@ window.ChatCrypto = (() => {
     return result.message;
   }
   async function receive(key,room,id) {
-    const response=await fetch(`/api/chats/${room}/messages/${id}`,{cache:'no-store'});
-    if(!response.ok) throw new Error('Content unavailable.');
-    return unpack(await decryptContent(key,room,await response.arrayBuffer()));
+    let wire;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      let status = 0;
+      try {
+        const response = await fetch(`/api/chats/${room}/messages/${id}`, {cache:'no-store'});
+        status = response.status;
+        if (!response.ok) throw new Error('Download failed.');
+        wire = await response.arrayBuffer();
+        break;
+      } catch (_) {
+        const temporary = status === 0 || status === 408 || status === 429 || status >= 500;
+        if (temporary && attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
+          continue;
+        }
+        const error = new Error(temporary ? 'This message could not be downloaded. Please retry.' : 'This message is unavailable or you no longer have access.');
+        error.name = 'MessageDownloadError';
+        throw error;
+      }
+    }
+    return unpack(await decryptContent(key,room,wire));
   }
   return {newKey,importKey,encryptContent,decryptContent,envelope,unpack,send,receive};
 })();

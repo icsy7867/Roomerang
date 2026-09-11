@@ -137,7 +137,6 @@ if (str_starts_with($path, '/api/')) {
         }
         $member = $service->member($room, $session);
         if (!$member) Http::json(['error' => 'Join this chat before viewing messages.', 'join_required' => true], 403);
-        $member = $service->touch($room,$member);
         if (isset($matches[3])) {
             if ($method !== 'GET' || $action !== 'messages') Http::json(['error'=>'Not found.'],404);
             $bytes=$service->content($room,$member,(int)$matches[3]);
@@ -146,6 +145,7 @@ if (str_starts_with($path, '/api/')) {
             echo $bytes;
             exit;
         }
+        $member = $service->touch($room,$member);
         if ($action === 'messages' && $method === 'GET') {
             Http::json([
                 'member' => $service->memberView($room,$member),
@@ -189,7 +189,7 @@ $defaultDuration = ChatService::defaultDuration();
   <meta name="theme-color" content="#111827">
   <title>Roomerang</title>
   <link rel="stylesheet" href="/assets/app.css?v=roomerang-2">
-  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-8">
+  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-9">
   <link rel="stylesheet" href="/assets/unavailable.css?v=roomerang-2">
 </head>
 <body>
@@ -233,8 +233,9 @@ $defaultDuration = ChatService::defaultDuration();
       <div id="messages" aria-live="polite"></div>
       <form id="message-form" class="composer">
         <textarea id="message-body" maxlength="12000" placeholder="Write Markdown or paste code…&#10;Drop a file or paste an image, or use ```language for code blocks."></textarea>
-        <div id="pending-attachment" class="pending-attachment" hidden style="display:none"><span id="pending-attachment-name"></span><button id="clear-attachment" class="quiet" type="button">Remove attachment</button></div>
-        <span id="char-count">0 / 12000</span><label id="file-control">Attach file (8 MB)<input id="file-input" type="file"></label><button id="send-message" class="primary" type="submit">Send</button>
+        <span id="char-count">0 / 12000</span>
+        <section id="file-control"><label for="file-input">Attach file (8 MB)</label><input id="file-input" type="file"><section id="attachment-tile" hidden aria-live="polite"><span id="attachment-icon" aria-hidden="true"></span><span id="attachment-name"></span><button id="clear-attachment" class="quiet" type="button" aria-label="Remove attachment" title="Remove attachment">×</button></section></section>
+        <button id="send-message" class="primary" type="submit">Send</button>
       </form>
     </section>
   </main>
@@ -244,7 +245,7 @@ $defaultDuration = ChatService::defaultDuration();
   <dialog id="share-dialog"><form method="dialog" class="share-dialog"><header><strong>Share this room</strong><button class="quiet" value="cancel">Close</button></header><p>Anyone with this complete link can join this room.</p><label>Room link<input id="share-url" type="text" readonly spellcheck="false"></label><button id="share-copy" class="primary" type="button">Copy link</button></form></dialog>
   <dialog id="file-preview"><form method="dialog" class="preview-dialog"><header><strong id="preview-title">File preview</strong><button class="quiet" value="cancel">Close</button></header><div id="preview-content"></div></form></dialog>
   <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
-  <script src="/assets/crypto.js?v=roomerang-2" defer></script>
-  <script src="/assets/app.js?v=roomerang-11" defer></script>
+  <script src="/assets/crypto.js?v=roomerang-3" defer></script>
+  <script src="/assets/app.js?v=roomerang-13" defer></script>
 </body>
 </html>

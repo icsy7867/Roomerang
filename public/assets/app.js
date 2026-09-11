@@ -89,12 +89,28 @@
     const previous = button.textContent; button.textContent = 'Copied'; setTimeout(() => { button.textContent = previous; }, 1200);
   };
   const scrollToLatest = () => { messages.scrollTop = messages.scrollHeight; };
-  const pendingAttachmentView = document.querySelector('#pending-attachment');
+  let attachmentThumbnail;
+  const clearAttachmentThumbnail = () => { if (attachmentThumbnail) URL.revokeObjectURL(attachmentThumbnail); attachmentThumbnail = undefined; };
+  window.addEventListener('pagehide', clearAttachmentThumbnail);
+  const pendingAttachmentView = document.querySelector('#attachment-tile');
   const updatePendingAttachment = () => {
+    clearAttachmentThumbnail();
     pendingAttachmentView.hidden = !pendingAttachment;
-    pendingAttachmentView.style.display = pendingAttachment ? '' : 'none';
-    pendingAttachmentView.classList.toggle('is-pending', Boolean(pendingAttachment));
-    document.querySelector('#pending-attachment-name').textContent = pendingAttachment ? `${pendingAttachment.name || 'attachment'} (${Math.ceil(pendingAttachment.size / 1024)} KB)` : '';
+    document.querySelector('#file-input').hidden = Boolean(pendingAttachment);
+    const name = document.querySelector('#attachment-name');
+    const icon = document.querySelector('#attachment-icon');
+    icon.replaceChildren();
+    name.textContent = pendingAttachment ? `${pendingAttachment.name || 'attachment'} (${Math.ceil(pendingAttachment.size / 1024)} KB)` : '';
+    name.title = name.textContent;
+    if (pendingAttachment) {
+      icon.textContent = 'FILE';
+      if (['image/png','image/jpeg','image/gif','image/webp'].includes(pendingAttachment.type)) {
+        const image = document.createElement('img');
+        image.alt = ''; attachmentThumbnail = URL.createObjectURL(pendingAttachment); image.src = attachmentThumbnail;
+        image.onerror = () => { if (icon.firstChild === image) { icon.textContent = 'FILE'; clearAttachmentThumbnail(); } };
+        icon.replaceChildren(image);
+      }
+    }
   };
   const stageAttachment = file => {
     if (!file) throw new Error('Select a file.');
@@ -161,6 +177,7 @@
   };
   const renderMessage = async (message, placeholder, localContent) => {
     let contentError;
+    let downloadFailed = false;
     try {
       const content = localContent || await ChatCrypto.receive(roomKey, token, message.id);
       if (content.kind === 'text') {
@@ -180,7 +197,10 @@
         message.preview_blob = blob; message.mime = content.mime;
         if (safeImage) message.image_url = url;
       }
-    } catch (_) { contentError = 'Unable to decrypt this message. Check that you have the correct complete chat link.'; }
+    } catch (error) {
+      downloadFailed = error.name === 'MessageDownloadError';
+      contentError = downloadFailed ? error.message : 'Unable to decrypt this message. Check that you have the correct complete chat link.';
+    }
     const element = document.querySelector('#message-template').content.firstElementChild.cloneNode(true);
     element.dataset.id = message.id;
     element.classList.toggle('mine', message.is_mine === true || message.is_mine === 1);
@@ -190,6 +210,16 @@
     const messageBody = element.querySelector('.message-body');
     if (contentError) {
       messageBody.textContent = contentError;
+      if (downloadFailed) {
+        const retry = document.createElement('button');
+        retry.type = 'button'; retry.className = 'quiet'; retry.textContent = 'Retry download';
+        retry.addEventListener('click', () => {
+          retry.disabled = true;
+          downloads.unshift({message, placeholder:element, resolve:() => {}});
+          drainDownloads();
+        });
+        messageBody.append(document.createTextNode(' '), retry);
+      }
     } else if (message.body) {
       messageBody.innerHTML = renderMarkdown(message.body);
     }
@@ -355,6 +385,7 @@
   });
   const composer = document.querySelector('#message-form');
   document.querySelector('#file-input').addEventListener('change', event => {
+    if (!event.target.files.length) return;
     try { stageAttachment(event.target.files[0]); } catch(error) { alert(error.message); }
     event.target.value = '';
   });

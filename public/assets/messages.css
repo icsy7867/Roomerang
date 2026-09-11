@@ -82,15 +82,17 @@ fieldset input[type="radio"] {
   min-height: 96px;
 }
 
-.pending-attachment { display: none; width: 100%; min-width: 0; max-width: 100%; align-items: center; justify-content: space-between; gap: 10px; overflow: hidden; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: #101929; color: var(--muted); font-size: .85rem; }
-.pending-attachment.is-pending { display: flex !important; }
-.pending-attachment span { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pending-attachment button { flex: 0 0 auto; }
+#file-control { display: grid; min-width: 0; gap: 4px; }
+#file-control [hidden] { display: none !important; }
+#attachment-tile { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 5px; border: 1px solid var(--line); border-radius: 8px; background: #0e1625; }
+#attachment-icon { flex: 0 0 36px; width: 36px; height: 36px; display: grid; place-items: center; font-size: 9px; color: var(--muted); }
+#attachment-icon img { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; }
+#attachment-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .75rem; }
+#clear-attachment { flex: 0 0 32px; min-height: 36px; font-size: 20px; }
 
 @media (min-width: 1001px) {
-  .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto 260px; grid-template-areas: 'message send file' 'attachment count file'; gap: 8px 14px; padding-block: 10px; }
+  .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto 260px; grid-template-areas: 'message send file' '. count file'; gap: 8px 14px; padding-block: 10px; }
   .composer textarea { grid-area: message; min-height: 76px; max-height: 120px; }
-  .composer .pending-attachment { grid-area: attachment; }
   #char-count { grid-area: count; align-self: center; }
   #file-control { grid-area: file; align-self: center; gap: 2px; font-size: .75rem; }
   #send-message { grid-area: send; align-self: center; }
@@ -162,9 +164,8 @@ fieldset input[type="radio"] {
     padding: 10px 12px max(5px, env(safe-area-inset-bottom));
   }
 
-  .composer { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'message message message' 'attachment attachment attachment' 'count file send'; gap: 8px; }
+  .composer { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'message message message' 'count file send'; gap: 8px; }
   .composer textarea { grid-area: message; min-height: 86px; }
-  .composer .pending-attachment { grid-area: attachment; }
   #char-count { grid-area: count; align-self: end; white-space: nowrap; }
   #file-control { grid-area: file; min-width: 0; font-size: .78rem; }
   #send-message { grid-area: send; align-self: end; }
