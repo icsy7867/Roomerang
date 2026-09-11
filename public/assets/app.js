@@ -11,7 +11,25 @@
   let roomKey;
   let currentRoom;
   let currentMember;
-  let renderQueue = Promise.resolve();
+  const downloads = [];
+  let activeDownloads = 0;
+  let oldestId = 0;
+  let moreHistory = false;
+  let loadingHistory = false;
+  let pollTimer;
+  const nearBottom = () => messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
+  const preserveScroll = change => {
+    const bottom = nearBottom();
+    const anchor = Array.from(messages.children).find(node => node.getBoundingClientRect().bottom > messages.getBoundingClientRect().top);
+    const top = anchor?.getBoundingClientRect().top;
+    const anchorId = anchor?.dataset.id;
+    change();
+    if (bottom) scrollToLatest();
+    else if (anchorId) {
+      const current = messages.querySelector(`[data-id="${anchorId}"]`);
+      if (current) messages.scrollTop += current.getBoundingClientRect().top - top;
+    }
+  };
   const objectUrls = new Set();
   let previewUrl;
   let pendingAttachment;
@@ -118,15 +136,33 @@
     else reader.readAsArrayBuffer(blob);
     dialog.showModal();
   };
-  const display = message => {
-    renderQueue = renderQueue.then(() => renderMessage(message));
-    return renderQueue;
+  const drainDownloads = () => {
+    while (activeDownloads < 4 && downloads.length) {
+      const job = downloads.shift();
+      activeDownloads++;
+      renderMessage(job.message, job.placeholder).catch(console.warn).finally(() => {
+        activeDownloads--; job.resolve(); drainDownloads();
+      });
+    }
   };
-  const renderMessage = async message => {
-    if (document.querySelector(`[data-id="${message.id}"]`)) return;
+  const display = (message, localContent, history = false) => {
+    if (messages.querySelector(`[data-id="${message.id}"]`)) return Promise.resolve();
+    const placeholder = document.createElement('article');
+    placeholder.className = 'message'; placeholder.dataset.id = message.id;
+    placeholder.textContent = 'Loading message…';
+    const next = Array.from(messages.children).find(node => Number(node.dataset.id) > Number(message.id));
+    preserveScroll(() => messages.insertBefore(placeholder, next || null));
+    if (localContent) return renderMessage(message, placeholder, localContent);
+    return new Promise(resolve => {
+      const job = {message, placeholder, resolve};
+      if (history) downloads.push(job); else downloads.unshift(job);
+      drainDownloads();
+    });
+  };
+  const renderMessage = async (message, placeholder, localContent) => {
     let contentError;
     try {
-      const content = await ChatCrypto.receive(roomKey, token, message.id);
+      const content = localContent || await ChatCrypto.receive(roomKey, token, message.id);
       if (content.kind === 'text') {
         message.body = new TextDecoder().decode(content.data);
       } else {
@@ -185,8 +221,7 @@
     if (message.body) copyButton.addEventListener('click', () => copy(message.body, copyButton));
     else copyButton.hidden = true;
     element.querySelectorAll('.code-copy').forEach(button => button.addEventListener('click', () => copy(decodeURIComponent(button.dataset.code), button)));
-    messages.append(element);
-    lastId = Math.max(lastId, Number(message.id));
+    preserveScroll(() => placeholder.replaceWith(element));
   };
   const updateMeta = (room, member = currentMember) => {
     currentRoom = room;
@@ -217,20 +252,35 @@
   };
   const activate = async data => {
     landing.hidden = true; unavailable.hidden = true; chat.hidden = false; updateUser(data.member); updateMeta(data.room, data.member);
-    for (const message of data.messages) await display(message);
+    lastId = data.messages.length ? Number(data.messages.at(-1).id) : 0;
+    oldestId = data.messages.length ? Number(data.messages[0].id) : 0;
+    moreHistory = data.messages.length === 25;
+    for (const message of [...data.messages].reverse()) display(message);
     scrollToLatest();
+    clearTimeout(pollTimer);
     poll();
   };
+  messages.addEventListener('scroll', async () => {
+    if (messages.scrollTop > 100 || loadingHistory || !moreHistory || !oldestId || joining) return;
+    loadingHistory = true;
+    try {
+      const data = await request(`/api/chats/${token}/messages?before=${oldestId}`);
+      moreHistory = data.messages.length === 25;
+      if (data.messages.length) oldestId = Number(data.messages[0].id);
+      await Promise.all([...data.messages].reverse().map(message => display(message, undefined, true)));
+    } catch (error) { console.warn(error.message); }
+    finally { loadingHistory = false; }
+  });
   const poll = async () => {
     if (!token || joining) return;
     try {
       const data = await request(`/api/chats/${token}/messages?after=${lastId}`);
       updateUser(data.member); updateMeta(data.room, data.member);
-      for (const message of data.messages) await display(message);
-      if (data.messages.length) scrollToLatest();
+      for (const message of data.messages) display(message);
+      if (data.messages.length) lastId = Number(data.messages.at(-1).id);
     }
     catch (error) { if (error.data?.join_required) showJoin(); else if (error.data?.moderation_denied) { showUnavailable(); unavailable.querySelector('.intro').textContent = error.message; } else console.warn(error.message); }
-    setTimeout(poll, 2500);
+    pollTimer = setTimeout(poll, 2500);
   };
   const showJoin = () => {
     if (joining) return;
@@ -334,7 +384,7 @@
         metadata = {kind:'text',mime:'text/markdown',name:''};
       }
       const message = await ChatCrypto.send(roomKey,token,data.buffer,metadata);
-      await display(message); field.value = ''; pendingAttachment = undefined; updatePendingAttachment(); document.querySelector('#char-count').textContent = '0 / 12000'; scrollToLatest();
+      await display(message, {...metadata, data:data.buffer}); field.value = ''; pendingAttachment = undefined; updatePendingAttachment(); document.querySelector('#char-count').textContent = '0 / 12000'; scrollToLatest();
     }
     catch (error) { alert(error.message); } finally { button.disabled = false; }
   });

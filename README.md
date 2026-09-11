@@ -59,6 +59,8 @@ Restore is deliberately an operator procedure rather than a browser upload. Enab
 
 ## Client-side encryption
 
+Joining a room loads the latest 25 messages first. The browser downloads and decrypts up to four messages concurrently, preserving chronological order with loading placeholders. Scroll upward to retrieve older history in pages of 25. Live polling runs independently of those downloads, and confirmed outgoing messages render from their local content without a second download. History pages enforce the same membership and join boundaries as individual message downloads.
+
 All new rooms use AES-256-GCM in the browser. The 32-byte key is carried in the URL fragment (`#...`) and never included in API requests. Share the **complete** link. HTTPS is required except on localhost; missing or incorrect keys cannot be recovered by the server.
 
 Text, images, and files share encrypted binary envelopes. An attachment is staged in the composer and is sent only when Send is pressed; a message can contain text, an attachment, or both. Filenames and MIME types are inside the encrypted envelope. The combined text-and-file payload is limited to 8 MiB; uploads are currently whole-file, with a versioned envelope and separate transport functions for future chunking. Downloaded files are not executed or embedded; only PNG/JPEG/GIF/WebP are rendered as images.

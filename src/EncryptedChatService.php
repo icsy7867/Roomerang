@@ -85,15 +85,19 @@ final class EncryptedChatService
         $q->execute([$session,$room['id']]);
         return $this->member($room,$session);
     }
-    public function messages(array $room, array $member, int $after=0): array
+    public function messages(array $room, array $member, int $after=0, ?int $before=null): array
     {
         $this->assertMember($member);
         $boundary=$room['history_mode']==='since_join' ? (int)$member['after_id'] : 0;
-        $q=$this->db->prepare('SELECT m.id,m.created_at,u.display_name,m.session_hash FROM encrypted_messages m JOIN encrypted_members u ON u.room_id=m.room_id AND u.session_hash=m.session_hash WHERE m.room_id=? AND m.id>? ORDER BY m.id LIMIT 100');
-        $q->execute([$room['id'],max($after,$boundary)]);
+        $q=$this->db->prepare('SELECT m.id,m.created_at,u.display_name,m.session_hash FROM encrypted_messages m JOIN encrypted_members u ON u.room_id=m.room_id AND u.session_hash=m.session_hash WHERE m.room_id=? AND m.id>?' . ($before !== null ? ' AND m.id<? ORDER BY m.id DESC LIMIT 25' : ' ORDER BY m.id LIMIT 100'));
+        $parameters = [$room['id'],max($after,$boundary)];
+        if ($before !== null) $parameters[] = $before;
+        $q->execute($parameters);
+        $rows = $q->fetchAll();
+        if ($before !== null) $rows = array_reverse($rows);
         return array_map(static function($m) use ($member) {
             $m['is_mine']=$m['session_hash']===$member['session_hash']; unset($m['session_hash']); return $m;
-        },$q->fetchAll());
+        },$rows);
     }
     public function post(array $room,array $member,string $nonce,string $ciphertext): array
     {

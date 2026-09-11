@@ -19,6 +19,15 @@ $other=$service->room($service->create('10m','all')['token']);
 $c=$service->join($other,'session-c','C');
 try {$service->content($other,$c,$second['id']); throw new LogicException('room leak');} catch(RuntimeException $e) {check($e->getMessage()==='Message unavailable.','cross-room content denied');}
 try {$service->post($r,$a,random_bytes(12),str_repeat('x',App\EncryptedChatService::MAX_CIPHERTEXT+1)); throw new LogicException('size limit');} catch(InvalidArgumentException) {echo "PASS server size limit\n";}
+$ids = [];
+for ($i = 0; $i < 60; $i++) $ids[] = $service->post($other,$c,random_bytes(12),random_bytes(32))['id'];
+$latest = $service->messages($other,$c,0,PHP_INT_MAX);
+check(array_column($latest,'id') === array_slice($ids,-25),'latest page returns newest 25 in chronological order');
+$older = $service->messages($other,$c,0,(int)$latest[0]['id']);
+check(array_column($older,'id') === array_slice($ids,10,25),'older page has no duplicates or gaps');
+check(array_column($service->messages($other,$c,0,(int)$older[0]['id']),'id') === array_slice($ids,0,10),'oldest partial page');
+check($service->messages($r,$b,0,(int)$second['id']) === [],'backward pagination respects join boundary');
+check(array_column($service->messages($other,$c,(int)$ids[57]),'id') === array_slice($ids,58),'live cursor returns only newer messages');
 $db->exec('UPDATE rooms SET expires_at=0');
 try {$service->room($r['token']); throw new LogicException('expired room');} catch(RuntimeException $e) {check(str_contains($e->getMessage(),'expired'),'expiry denied');}
 check((int)$db->query('SELECT COUNT(*) FROM messages')->fetchColumn()===0,'no plaintext message rows');

@@ -133,7 +133,7 @@ if (str_starts_with($path, '/api/')) {
             $data = Http::input();
             $member = $service->join($room, $session, (string)($data['name'] ?? ''));
             $room=$service->room($matches[1]);
-            Http::json(['room' => $service->roomView($room), 'member' => $service->memberView($room,$member), 'messages' => $service->messages($room, $member)]);
+            Http::json(['room' => $service->roomView($room), 'member' => $service->memberView($room,$member), 'messages' => $service->messages($room, $member, 0, PHP_INT_MAX)]);
         }
         $member = $service->member($room, $session);
         if (!$member) Http::json(['error' => 'Join this chat before viewing messages.', 'join_required' => true], 403);
@@ -150,7 +150,7 @@ if (str_starts_with($path, '/api/')) {
             Http::json([
                 'member' => $service->memberView($room,$member),
                 'room' => $service->roomView($room),
-                'messages' => $service->messages($room, $member, (int)($_GET['after'] ?? 0)),
+                'messages' => $service->messages($room, $member, (int)($_GET['after'] ?? 0), isset($_GET['before']) ? max(0, (int)$_GET['before']) : (isset($_GET['after']) ? null : PHP_INT_MAX)),
             ]);
         }
         if ($action === 'messages' && $method === 'POST') {
@@ -245,6 +245,6 @@ $defaultDuration = ChatService::defaultDuration();
   <dialog id="file-preview"><form method="dialog" class="preview-dialog"><header><strong id="preview-title">File preview</strong><button class="quiet" value="cancel">Close</button></header><div id="preview-content"></div></form></dialog>
   <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
   <script src="/assets/crypto.js?v=roomerang-2" defer></script>
-  <script src="/assets/app.js?v=roomerang-10" defer></script>
+  <script src="/assets/app.js?v=roomerang-11" defer></script>
 </body>
 </html>
