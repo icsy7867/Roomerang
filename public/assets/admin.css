@@ -1,3 +1,5 @@
+.admin-login, .admin-panel { background-repeat: no-repeat; }
+body { background-repeat: no-repeat; background-attachment: fixed; }
 .admin-panel { width: min(840px, calc(100% - 32px)); margin: 5vh auto; }
 .admin-login { max-width: 420px; }
 .admin-header { display: flex; justify-content: space-between; align-items: start; gap: 20px; margin-bottom: 28px; }

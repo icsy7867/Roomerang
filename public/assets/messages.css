@@ -82,8 +82,10 @@ fieldset input[type="radio"] {
   min-height: 96px;
 }
 
-.pending-attachment { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: #101929; color: var(--muted); font-size: .85rem; }
-.pending-attachment span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pending-attachment { display: flex; width: 100%; min-width: 0; max-width: 100%; align-items: center; justify-content: space-between; gap: 10px; overflow: hidden; padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: #101929; color: var(--muted); font-size: .85rem; }
+.pending-attachment[hidden] { display: none !important; }
+.pending-attachment span { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pending-attachment button { flex: 0 0 auto; }
 
 #mode-controls, #master-controls { display: flex; gap: 6px; align-items: center; }
 #readonly-toggle:disabled { opacity: .85; cursor: default; }
