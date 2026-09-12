@@ -68,6 +68,15 @@ CREATE TABLE IF NOT EXISTS encrypted_messages (
 );
 CREATE INDEX IF NOT EXISTS idx_encrypted_messages_room ON encrypted_messages(room_id, id);
 
+-- An opaque bearer token can expose one encrypted message while its room remains active.
+-- The AES key stays in the URL fragment and is never stored here.
+CREATE TABLE IF NOT EXISTS encrypted_message_shares (
+  token TEXT PRIMARY KEY,
+  message_id INTEGER NOT NULL UNIQUE REFERENCES encrypted_messages(id) ON DELETE CASCADE,
+  display_name TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS system_settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL

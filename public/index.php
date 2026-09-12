@@ -104,6 +104,17 @@ if (str_starts_with($path, '/api/')) {
             $room = $service->create((string)($data['duration'] ?? ''), (string)($data['history_mode'] ?? ''));
             Http::json(['room' => $room]);
         }
+        if (preg_match('#^/api/shares/([A-Za-z0-9_-]{43})(?:/(content))?$#', $path, $shareMatch)) {
+            if ($method !== 'GET') Http::json(['error'=>'Not found.'],404);
+            $shared=$service->shared($shareMatch[1]);
+            if (($shareMatch[2] ?? '') === 'content') {
+                header('Content-Type: application/octet-stream');
+                header('Cache-Control: no-store');
+                echo $service->sharedContent($shared);
+                exit;
+            }
+            Http::json(['message'=>$service->sharedView($shared)]);
+        }
         if (preg_match('#^/api/chats/([A-Za-z0-9_-]{43})/moderation(?:/(read-only|members/([a-f0-9]{12})/(kick|block)))?$#', $path, $moderation)) {
             $room = $service->room($moderation[1]);
             $session = Http::sessionId();
@@ -138,6 +149,9 @@ if (str_starts_with($path, '/api/')) {
         $member = $service->member($room, $session);
         if (!$member) Http::json(['error' => 'Join this chat before viewing messages.', 'join_required' => true], 403);
         if (isset($matches[3])) {
+            if ($method === 'POST' && $action === 'messages') {
+                Http::json(['share'=>$service->share($room,$member,(int)$matches[3])],201);
+            }
             if ($method !== 'GET' || $action !== 'messages') Http::json(['error'=>'Not found.'],404);
             $bytes=$service->content($room,$member,(int)$matches[3]);
             header('Content-Type: application/octet-stream');
@@ -174,7 +188,8 @@ if (str_starts_with($path, '/api/')) {
     }
 }
 
-if ($path !== '/' && !preg_match('#^/chat/[A-Za-z0-9_-]{43}$#', $path)) {
+$shareToken = preg_match('#^/share/([A-Za-z0-9_-]{43})$#', $path, $shareMatch) ? $shareMatch[1] : null;
+if ($path !== '/' && !preg_match('#^/chat/[A-Za-z0-9_-]{43}$#', $path) && $shareToken === null) {
     http_response_code(404);
 }
 
@@ -221,6 +236,13 @@ $defaultDuration = ChatService::defaultDuration();
       <a class="primary button-link" href="/">Create a new chat</a>
     </section>
 
+    <section id="shared-view" class="panel" data-share-token="<?= htmlspecialchars((string)$shareToken, ENT_QUOTES) ?>" hidden>
+      <a href="/" class="brand"><img class="brand-logo" src="/assets/roomerang.svg?v=1" alt=""><span class="brand-name">Roomerang</span></a>
+      <h2>Shared message</h2>
+      <p id="shared-status" class="intro">Decrypting shared message…</p>
+      <article id="shared-message" class="message" hidden><header><strong class="author"></strong><time></time></header><div class="message-body"></div></article>
+    </section>
+
     <section id="chat" hidden>
       <header class="chat-header">
         <a href="/" class="brand"><img class="brand-logo" src="/assets/roomerang.svg?v=1" alt=""><span class="brand-name">Roomerang</span></a>
@@ -245,11 +267,15 @@ $defaultDuration = ChatService::defaultDuration();
 
   <dialog id="join-dialog"><form id="join-form" method="dialog"><h2>Join this chat</h2><p>Choose a name for this chat. You can keep the suggested one.</p><label>Your name<input id="join-name" maxlength="40" required></label><button class="primary" type="submit">Join chat</button><p id="join-error" class="error"></p></form></dialog>
   <dialog id="users-dialog"><form method="dialog"><h2>Active users</h2><div id="active-users"></div><p id="moderation-error" class="error"></p><button class="quiet" value="cancel">Close</button></form></dialog>
-  <dialog id="share-dialog"><form method="dialog" class="share-dialog"><header><strong>Share this room</strong><button class="quiet" value="cancel">Close</button></header><p>Anyone with this complete link can join this room.</p><label>Room link<input id="share-url" type="text" readonly spellcheck="false"></label><button id="share-copy" class="primary" type="button">Copy link</button></form></dialog>
+  <dialog id="share-dialog"><form method="dialog" class="share-dialog"><header><strong id="share-title">Share this room</strong><button class="quiet" value="cancel">Close</button></header><p id="share-description">Anyone with this complete link can join this room.</p><label>Link<input id="share-url" type="text" readonly spellcheck="false"></label><button id="share-copy" class="primary" type="button">Copy link</button></form></dialog>
   <dialog id="file-preview"><form method="dialog" class="preview-dialog"><header><strong id="preview-title">File preview</strong><button class="quiet" value="cancel">Close</button></header><div id="preview-content"></div></form></dialog>
-  <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
+  <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="share-message quiet" type="button" title="Share this message" aria-label="Share this message"><img class="share-boomerang" src="/assets/roomerang.svg?v=1" alt=""></button><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
   <script src="/assets/crypto.js?v=roomerang-3" defer></script>
+  <?php if ($shareToken !== null): ?>
+  <script src="/assets/share.js?v=roomerang-1" defer></script>
+  <?php else: ?>
   <script src="/assets/easymde.min.js?v=2.21.0" defer></script>
-  <script src="/assets/app.js?v=roomerang-25" defer></script>
+  <script src="/assets/app.js?v=roomerang-26" defer></script>
+  <?php endif ?>
 </body>
 </html>

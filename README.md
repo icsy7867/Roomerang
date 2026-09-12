@@ -69,6 +69,8 @@ The server sees room/session identifiers, display names, timestamps, ciphertext 
 
 The message composer uses a vendored EasyMDE build for Markdown-aware editing and syntax highlighting; it does not load editor code from a runtime CDN.
 
+Each message can be shared as a separate read-only link. The server stores only a random share token and the message association; the room AES key stays in the URL fragment. A shared link reveals only that message's encrypted bytes, remains valid only while its parent chat is active, and renders Markdown/code safely in a read-only view.
+
 Pre-release plaintext rooms are unavailable through the new API, including their old media URLs. Their existing rows are not converted or erased automatically; they are pruned through the existing expiry cleanup. Only encrypted rooms can be created by the web application.
 
 Validation: `podman run --rm --entrypoint php paste-chat:local /app/tests/encrypted-storage.php`.

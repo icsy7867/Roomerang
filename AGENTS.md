@@ -68,6 +68,8 @@ Important routes:
 - `GET /api/chats/{token}/messages` returns the latest visible 25-message page; `?after={id}` returns newer messages for polling; `?before={id}` returns the preceding visible 25-message page. Each result is chronological even when selected backward.
 - `POST /api/chats/{token}/messages` accepts `application/octet-stream`: 12-byte nonce followed by ciphertext (including the GCM tag). The request body is opaque to PHP; content type and filename are not trusted from request metadata.
 - `GET /api/chats/{token}/messages/{id}` serves those bytes after membership, expiry, and history checks. Polling returns metadata only.
+- `POST /api/chats/{token}/messages/{id}` creates or reuses an opaque share token for a message visible to the current member.
+- `GET /api/shares/{share_token}` returns metadata for one active shared message; `GET /api/shares/{share_token}/content` serves only its encrypted bytes. The public `/share/{share_token}#{room_key}` view is read-only.
 - Legacy plaintext message/image routes are disabled. Encrypted rooms are identified by the `encrypted_rooms` table; old rows are retained until expiry cleanup.
 
 Moderation routes are available to the Master member only:
@@ -79,11 +81,11 @@ Moderation routes are available to the Master member only:
 
 The first successful `join` inserts `encrypted_rooms.master_session_hash`; subsequent joins cannot claim Master status. `read_only`, `blocked`, and `last_seen_at` are server-side control metadata and are not part of the encrypted message payload.
 
-Room tokens are URL-safe encodings of 32 random bytes. Do not replace them with sequential IDs, short slugs, timestamps, or user-controlled values. The browser-generated AES key is also 32 random bytes and is carried only in the URL fragment. Never log, persist, or include that fragment in an API request.
+Room and message-share tokens are URL-safe encodings of 32 random bytes. Do not replace them with sequential IDs, short slugs, timestamps, or user-controlled values. The browser-generated AES key is also 32 random bytes and is carried only in the URL fragment. Never log, persist, or include that fragment in an API request.
 
 ## Data model and schema changes
 
-SQLite contains legacy `rooms`, `members`, `messages`, and `images` tables plus active `encrypted_rooms`, `encrypted_members`, and `encrypted_messages` tables. Encrypted messages store opaque nonce/ciphertext BLOBs; display names, timestamps, and room membership boundaries remain operational metadata. Foreign keys are enabled and room deletion cascades through related rows. New code should use `EncryptedChatService`, not the legacy plaintext methods.
+SQLite contains legacy `rooms`, `members`, `messages`, and `images` tables plus active `encrypted_rooms`, `encrypted_members`, `encrypted_messages`, and `encrypted_message_shares` tables. Encrypted messages store opaque nonce/ciphertext BLOBs; display names, timestamps, and room membership boundaries remain operational metadata. Message shares hold only an opaque token and a message reference. Foreign keys are enabled and room deletion cascades through related rows. New code should use `EncryptedChatService`, not the legacy plaintext methods.
 
 `database/schema.sql` uses `CREATE TABLE IF NOT EXISTS`, so it is safe to apply at startup for new databases. Existing database changes need an explicit migration in `scripts/init.php`; adding a new table is usually enough with the current idempotent schema, but adding or changing columns requires checking `PRAGMA table_info(...)` and applying a guarded `ALTER TABLE`. Never assume that a persistent `/app/data/database.sql` is empty.
 

@@ -117,6 +117,37 @@ final class EncryptedChatService
         if(!$m) throw new \RuntimeException('Message unavailable.');
         return $m['nonce'].$m['ciphertext'];
     }
+    public function share(array $room, array $member, int $id): array
+    {
+        $this->assertMember($member);
+        SystemState::assertWritable($this->db);
+        $boundary=$room['history_mode']==='since_join' ? (int)$member['after_id'] : 0;
+        $q=$this->db->prepare('SELECT m.id,u.display_name FROM encrypted_messages m JOIN encrypted_members u ON u.room_id=m.room_id AND u.session_hash=m.session_hash WHERE m.room_id=? AND m.id=? AND m.id>?');
+        $q->execute([$room['id'],$id,$boundary]);
+        $message=$q->fetch();
+        if (!$message) throw new \RuntimeException('Message unavailable.');
+        $q=$this->db->prepare('SELECT token FROM encrypted_message_shares WHERE message_id=?');
+        $q->execute([$id]); $existing=$q->fetchColumn();
+        if ($existing) return ['token'=>$existing];
+        $token=rtrim(strtr(base64_encode(random_bytes(32)),'+/','-_'),'=');
+        $q=$this->db->prepare('INSERT INTO encrypted_message_shares(token,message_id,display_name,created_at) VALUES (?,?,?,?)');
+        $q->execute([$token,$id,$message['display_name'],time()]);
+        return ['token'=>$token];
+    }
+    public function shared(string $token): array
+    {
+        $q=$this->db->prepare('SELECT s.token,r.token AS room_token,m.id,m.created_at,s.display_name,m.nonce,m.ciphertext FROM encrypted_message_shares s JOIN encrypted_messages m ON m.id=s.message_id JOIN rooms r ON r.id=m.room_id WHERE s.token=? AND r.expires_at>?');
+        $q->execute([$token,time()]);
+        return $q->fetch() ?: throw new \RuntimeException('This shared message does not exist or has expired.');
+    }
+    public function sharedView(array $shared): array
+    {
+        return ['id'=>(int)$shared['id'],'created_at'=>(int)$shared['created_at'],'display_name'=>$shared['display_name'],'room_token'=>$shared['room_token']];
+    }
+    public function sharedContent(array $shared): string
+    {
+        return $shared['nonce'].$shared['ciphertext'];
+    }
     public function requireCanPost(array $room, array $member): void
     {
         $this->assertMember($member);

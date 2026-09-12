@@ -299,6 +299,17 @@
     const copyButton = element.querySelector('.copy-message');
     if (message.body) copyButton.addEventListener('click', () => copy(message.body, copyButton));
     else copyButton.hidden = true;
+    const shareButton = element.querySelector('.share-message');
+    shareButton.addEventListener('click', async () => {
+      shareButton.disabled = true;
+      try {
+        const data = await request(`/api/chats/${token}/messages/${message.id}`, {method:'POST'});
+        const url = new URL(`/share/${data.share.token}`, location.origin);
+        url.hash = location.hash;
+        openShareDialog(url.href, 'Share this message', 'Anyone with this complete link can view this message while the chat remains active.');
+      } catch (error) { alert(error.message); }
+      finally { shareButton.disabled = false; }
+    });
     element.querySelectorAll('.code-copy').forEach(button => button.addEventListener('click', () => copy(decodeURIComponent(button.dataset.code), button)));
     preserveScroll(() => placeholder.replaceWith(element));
   };
@@ -477,10 +488,15 @@
   });
   const shareDialog = document.querySelector('#share-dialog');
   const shareUrl = document.querySelector('#share-url');
-  document.querySelector('#copy-link').addEventListener('click', () => {
-    shareUrl.value = location.href;
+  const openShareDialog = (url, title, description) => {
+    document.querySelector('#share-title').textContent = title;
+    document.querySelector('#share-description').textContent = description;
+    shareUrl.value = url;
     shareDialog.showModal();
     requestAnimationFrame(() => shareUrl.select());
+  };
+  document.querySelector('#copy-link').addEventListener('click', () => {
+    openShareDialog(location.href, 'Share this room', 'Anyone with this complete link can join this room.');
   });
   document.querySelector('#share-copy').addEventListener('click', event => copy(shareUrl.value, event.currentTarget));
   const menuToggle = document.querySelector('#chat-menu-toggle');

@@ -82,5 +82,10 @@ window.ChatCrypto = (() => {
     }
     return unpack(await decryptContent(key,room,wire));
   }
-  return {newKey,importKey,encryptContent,decryptContent,envelope,unpack,send,receive};
+  async function receiveShared(key, room, token) {
+    const response = await fetch(`/api/shares/${token}/content`, {cache:'no-store'});
+    if (!response.ok) throw new Error('This shared message is unavailable or has expired.');
+    return unpack(await decryptContent(key, room, await response.arrayBuffer()));
+  }
+  return {newKey,importKey,encryptContent,decryptContent,envelope,unpack,send,receive,receiveShared};
 })();
