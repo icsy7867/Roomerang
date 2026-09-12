@@ -205,7 +205,7 @@ $defaultDuration = ChatService::defaultDuration();
   <title>Roomerang</title>
   <link rel="stylesheet" href="/assets/app.css?v=roomerang-3">
   <link rel="stylesheet" href="/assets/easymde.min.css?v=2.21.0">
-  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-19">
+  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-20">
   <link rel="stylesheet" href="/assets/unavailable.css?v=roomerang-2">
 </head>
 <body>
@@ -272,10 +272,10 @@ $defaultDuration = ChatService::defaultDuration();
   <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="share-message quiet" type="button" title="Share this message" aria-label="Share this message"><img class="share-boomerang" src="/assets/roomerang.svg?v=1" alt=""></button><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
   <script src="/assets/crypto.js?v=roomerang-3" defer></script>
   <?php if ($shareToken !== null): ?>
-  <script src="/assets/share.js?v=roomerang-2" defer></script>
+  <script src="/assets/share.js?v=roomerang-3" defer></script>
   <?php else: ?>
   <script src="/assets/easymde.min.js?v=2.21.0" defer></script>
-  <script src="/assets/app.js?v=roomerang-26" defer></script>
+  <script src="/assets/app.js?v=roomerang-27" defer></script>
   <?php endif ?>
 </body>
 </html>

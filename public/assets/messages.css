@@ -284,6 +284,7 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
 
 #share-dialog { width: min(560px, calc(100vw - 32px)); }
 .panel#shared-view { max-width: 70vw; }
+#shared-view .message-body pre { max-height: 75dvh; }
 .share-dialog { display: grid; gap: 14px; }
 .share-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .share-dialog p { margin: 0; }

@@ -93,7 +93,8 @@
   const escape = value => value.replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const highlight = (code, language) => {
     let html = escape(code);
-    if (/^(js|javascript|ts|typescript|php|python|py|java|c|cpp|css|json|bash|sh|sql|html|xml)$/i.test(language)) {
+    const detected = language.trim() || (/^\s*<\?php\b/.test(code) ? 'php' : /^\s*(?:SELECT|INSERT|UPDATE|DELETE|CREATE)\b/i.test(code) ? 'sql' : /^\s*(?:const|let|var|function|import|export)\b/.test(code) ? 'javascript' : '');
+    if (/^(js|javascript|ts|typescript|php|python|py|java|c|cpp|css|json|bash|sh|sql|html|xml)$/i.test(detected)) {
       html = html.replace(/(&quot;(?:\\.|[^&])*?&quot;|'(?:\\.|[^'])*?')/g, '<span class="str">$1</span>');
       html = html.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="num">$1</span>');
       html = html.replace(/\b(function|return|const|let|var|class|new|if|else|for|while|public|private|static|async|await|echo|SELECT|FROM|WHERE|INSERT|CREATE|def|import|from|true|false|null|NULL)\b/gi, '<span class="kw">$1</span>');
