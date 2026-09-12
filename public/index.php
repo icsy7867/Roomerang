@@ -235,8 +235,10 @@ $defaultDuration = ChatService::defaultDuration();
       <form id="message-form" class="composer">
         <textarea id="message-body" maxlength="12000" placeholder="Write Markdown or paste code…&#10;Drop a file or paste an image, or use ```language for code blocks."></textarea>
         <span id="char-count">0 / 12000</span>
-        <section id="file-control"><label for="file-input">Attach file (8 MB)</label><input id="file-input" type="file"><section id="attachment-tile" hidden aria-live="polite"><span id="attachment-icon" aria-hidden="true"></span><span id="attachment-name"></span><button id="clear-attachment" class="quiet" type="button" aria-label="Remove attachment" title="Remove attachment">×</button></section></section>
-        <button id="send-message" class="primary" type="submit">Send</button>
+        <div id="composer-actions">
+          <section id="file-control"><label for="file-input">Attach file (8 MB)</label><input id="file-input" type="file"><section id="attachment-tile" hidden aria-live="polite"><span id="attachment-icon" aria-hidden="true"></span><span id="attachment-name"></span><button id="clear-attachment" class="quiet" type="button" aria-label="Remove attachment" title="Remove attachment">×</button></section></section>
+          <button id="send-message" class="primary" type="submit">Send</button>
+        </div>
       </form>
     </section>
   </main>

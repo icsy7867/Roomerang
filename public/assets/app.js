@@ -115,6 +115,7 @@
     clearAttachmentThumbnail();
     pendingAttachmentView.hidden = !pendingAttachment;
     document.querySelector('#file-input').hidden = Boolean(pendingAttachment);
+    document.querySelector('#file-control label').hidden = Boolean(pendingAttachment);
     const name = document.querySelector('#attachment-name');
     const icon = document.querySelector('#attachment-icon');
     icon.replaceChildren();
