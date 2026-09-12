@@ -9,7 +9,9 @@ final class AdminService
     private const COOKIE = 'paste_chat_admin';
     private const SESSION_LIFETIME = 28800;
 
-    public function __construct(private ?PDO $db) {}
+    public function __construct(private ?PDO $db, private bool $emergency = false) {}
+
+    private static function emergencyKey(): string { return (string)(getenv('ADMIN_PASSWORD_HASH') ?: getenv('ADMIN_PASSWORD')); }
 
     private function db(): PDO
     {
@@ -29,6 +31,14 @@ final class AdminService
         $valid = $hash !== '' ? password_verify($password, $hash) : ($plain !== '' && hash_equals($plain, $password));
         if (!$valid) return false;
 
+        if ($this->emergency) {
+            $expires = time() + self::SESSION_LIFETIME;
+            $csrf = bin2hex(random_bytes(32));
+            $signature = hash_hmac('sha256', $expires . '|' . $csrf, self::emergencyKey());
+            self::setCookie('e.' . $expires . '.' . $csrf . '.' . $signature, $expires);
+            return true;
+        }
+
         $this->db()->prepare('DELETE FROM admin_sessions WHERE expires_at <= ?')->execute([time()]);
         $session = bin2hex(random_bytes(32));
         $csrf = bin2hex(random_bytes(32));
@@ -42,6 +52,11 @@ final class AdminService
     public function session(): ?array
     {
         $session = $_COOKIE[self::COOKIE] ?? '';
+        if ($this->emergency) {
+            if (!is_string($session) || !preg_match('/^e\.([0-9]{10})\.([a-f0-9]{64})\.([a-f0-9]{64})$/', $session, $match)) return null;
+            if ((int)$match[1] <= time() || !hash_equals(hash_hmac('sha256', $match[1] . '|' . $match[2], self::emergencyKey()), $match[3])) return null;
+            return ['session_hash' => '', 'csrf_token' => $match[2], 'expires_at' => (int)$match[1]];
+        }
         if (!is_string($session) || !preg_match('/^[a-f0-9]{64}$/', $session)) return null;
         $statement = $this->db()->prepare('SELECT session_hash, csrf_token, expires_at FROM admin_sessions WHERE session_hash = ? AND expires_at > ?');
         $statement->execute([hash('sha256', $session), time()]);
@@ -51,6 +66,7 @@ final class AdminService
     public function logout(): void
     {
         $session = $_COOKIE[self::COOKIE] ?? '';
+        if ($this->emergency) { self::setCookie('', time() - 3600); return; }
         if (is_string($session) && preg_match('/^[a-f0-9]{64}$/', $session)) {
             $this->db()->prepare('DELETE FROM admin_sessions WHERE session_hash = ?')->execute([hash('sha256', $session)]);
         }

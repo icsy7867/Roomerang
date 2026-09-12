@@ -17,6 +17,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-sr
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
 $method = $_SERVER['REQUEST_METHOD'];
+$integrityFailure = Database::integrityFailure();
 
 if (str_starts_with($path, '/admin')) {
     if ($path !== '/admin' && $path !== '/admin/login') {
@@ -28,7 +29,7 @@ if (str_starts_with($path, '/admin')) {
         exit;
     }
     header('Cache-Control: no-store');
-    $admin = new AdminService(Database::connection());
+    $admin = new AdminService(Database::connection(), $integrityFailure !== null);
     $error = '';
     try {
         if ($method === 'POST' && $path === '/admin/login') {
@@ -88,7 +89,7 @@ if (str_starts_with($path, '/admin')) {
         <?php
         exit;
     }
-    $stats = $admin->statistics();
+    $stats = $integrityFailure === null ? $admin->statistics() : ['total_chats'=>0,'active_chats'=>0,'expired_chats'=>0,'empty_chats'=>0,'maximum_messages'=>0,'average_messages'=>0,'maintenance_mode'=>true,'integrity'=>$integrityFailure];
     $notice = (string)($_GET['notice'] ?? '');
     if ($notice === 'maintenance') $notice = 'Maintenance mode updated.';
     elseif (preg_match('/^pruned-([0-9]+)$/', $notice, $match)) $notice = $match[1] . ' expired chat(s) removed.';
@@ -106,6 +107,7 @@ if ($method === 'GET' && preg_match('#^/media/([A-Za-z0-9_-]{43})$#', $path, $im
 }
 
 if (str_starts_with($path, '/api/')) {
+    if ($integrityFailure !== null) Http::json(['error' => 'Roomerang is undergoing database maintenance. Please try again later.'], 503);
     try {
         $service = new EncryptedChatService(Database::connection());
         if ($method === 'POST' && $path === '/api/chats') {
@@ -222,6 +224,7 @@ $defaultDuration = ChatService::defaultDuration();
     <section id="landing" class="panel">
       <div class="brand"><img class="brand-logo" src="/assets/roomerang.svg?v=1" alt=""><h1>Roomerang</h1></div>
       <p class="intro">A private, temporary place to paste ideas, Markdown, and code.</p>
+      <?php if ($integrityFailure !== null): ?><p class="error"><strong>Roomerang is undergoing maintenance.</strong> New chats are temporarily unavailable. Please try again later.</p><?php endif ?>
       <form id="create-form">
         <label>Chat expires after
           <select name="duration">
@@ -234,7 +237,7 @@ $defaultDuration = ChatService::defaultDuration();
           <label><input type="radio" name="history_mode" value="all" checked> The whole chat history</label>
           <label><input type="radio" name="history_mode" value="since_join"> Messages sent after they join</label>
         </fieldset>
-        <button class="primary" type="submit">Create chat</button>
+        <button class="primary" type="submit"<?= $integrityFailure !== null ? ' disabled' : '' ?>>Create chat</button>
       </form>
     </section>
 

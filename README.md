@@ -57,6 +57,8 @@ Restore is deliberately an operator procedure rather than a browser upload. Enab
 
 For a development/beta recovery where preserving chats is not required, the Admin console provides a destructive **Reset database** control. It requires typing `RESET ALL CHATS`, permanently removes all chat and admin data plus SQLite sidecars, and recreates the database with the bundled schema. Use it only while one application task has access to the database volume; it is not a repair mechanism for production data.
 
+If startup detects SQLite corruption, the container remains running in database-integrity maintenance mode. Chat APIs return `503`, the landing page disables new-chat creation, and `/admin` remains available with an emergency password-authenticated session so an operator can reset the beta database or attempt a backup. The container health check stays runnable in this state to prevent an orchestrator restart loop.
+
 ## Notes
 
 ## Client-side encryption

@@ -28,7 +28,8 @@ try {
     if ($check !== 'ok') {
         throw new RuntimeException('SQLite integrity check failed: ' . $check);
     }
+    App\Database::clearIntegrityFailure();
 } catch (Throwable $e) {
-    fwrite(STDERR, "Database initialization failed: {$e->getMessage()}\n");
-    exit(1);
+    App\Database::markIntegrityFailure($e->getMessage());
+    fwrite(STDERR, "Database initialization entered maintenance mode: {$e->getMessage()}\n");
 }

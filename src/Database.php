@@ -6,6 +6,24 @@ use PDO;
 
 final class Database
 {
+    public static function integrityFailure(): ?string
+    {
+        $status = self::path() . '.integrity-failed';
+        if (!is_file($status)) return null;
+        $message = file_get_contents($status);
+        return $message === false ? 'The database integrity check failed.' : trim($message);
+    }
+
+    public static function markIntegrityFailure(string $message): void
+    {
+        file_put_contents(self::path() . '.integrity-failed', $message . "\n", LOCK_EX);
+    }
+
+    public static function clearIntegrityFailure(): void
+    {
+        $status = self::path() . '.integrity-failed';
+        if (is_file($status) && !unlink($status)) throw new \RuntimeException('Could not clear the database maintenance marker.');
+    }
     public static function path(): string
     {
         return getenv('PASTE_CHAT_DB') ?: '/app/data/database.sql';
@@ -42,6 +60,7 @@ final class Database
             $db->exec($schema);
             $check = $db->query('PRAGMA integrity_check')->fetchColumn();
             if ($check !== 'ok') throw new \RuntimeException('Fresh database integrity check failed: ' . $check);
+            self::clearIntegrityFailure();
         } finally {
             $db = null;
         }
