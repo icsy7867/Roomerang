@@ -146,6 +146,7 @@
     icon.replaceChildren();
     name.textContent = pendingAttachment ? `${pendingAttachment.name || 'attachment'} (${Math.ceil(pendingAttachment.size / 1024)} KB)` : '';
     name.title = name.textContent;
+    pendingAttachmentView.title = name.textContent;
     if (pendingAttachment) {
       icon.textContent = 'FILE';
       if (['image/png','image/jpeg','image/gif','image/webp'].includes(pendingAttachment.type)) {
@@ -196,6 +197,10 @@
     else reader.readAsArrayBuffer(blob);
     dialog.showModal();
   };
+  pendingAttachmentView.addEventListener('click', event => {
+    if (event.target.closest('#clear-attachment') || !pendingAttachment) return;
+    previewFile(pendingAttachment, pendingAttachment.name, pendingAttachment.type || 'application/octet-stream');
+  });
   const drainDownloads = () => {
     while (activeDownloads < 4 && downloads.length) {
       const job = downloads.shift();

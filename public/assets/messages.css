@@ -165,9 +165,11 @@ fieldset input[type="radio"] {
   }
   #file-control label:hover { border-color: #4a6388; color: var(--text); }
   #file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-  #attachment-tile { width: 100%; height: 100%; min-height: 0; }
-  #attachment-icon { flex-basis: 56px; width: 56px; height: 56px; }
-  #attachment-icon img { width: 56px; height: 56px; }
+  #attachment-tile { position: relative; display: block; width: 100%; height: 100%; min-height: 0; padding: 6px; cursor: pointer; }
+  #attachment-icon { width: 100%; height: 100%; font-size: .85rem; }
+  #attachment-icon img { width: 100%; height: 100%; border-radius: 4px; }
+  #attachment-name { display: none; }
+  #clear-attachment { position: absolute; z-index: 1; top: 8px; right: 8px; width: 28px; height: 28px; min-height: 0; padding: 0; border-radius: 999px; background: #101929e6; font-size: 18px; line-height: 1; }
   #send-message { flex: 0 0 112px; min-height: 48px; }
 }
 
