@@ -158,7 +158,7 @@ fieldset input[type="radio"] {
 #attachment-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .75rem; }
 #clear-attachment { flex: 0 0 32px; min-height: 36px; font-size: 20px; }
 
-@media (min-width: 1001px) {
+@media (min-width: 701px) {
   .composer {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 270px;
@@ -271,12 +271,16 @@ fieldset input[type="radio"] {
   .message header { padding: 6px 9px; }
   .message-body { padding: 9px; }
 
+}
+
+@media (max-width: 700px) {
   .composer {
-    gap: 10px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'message message message' 'count file send';
+    gap: 8px;
     padding: 10px 12px max(5px, env(safe-area-inset-bottom));
   }
-
-  .composer { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'message message message' 'count file send'; gap: 8px; }
   #composer-actions { display: contents; }
   .composer textarea { grid-area: message; min-height: 86px; }
   .composer .EasyMDEContainer .CodeMirror { height: 86px; min-height: 86px; }
