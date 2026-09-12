@@ -55,6 +55,8 @@ Maintenance mode leaves existing joined members able to read rooms but prevents 
 
 Restore is deliberately an operator procedure rather than a browser upload. Enable maintenance, stop every application container using the database, replace the database with a verified SQLite backup, remove any stale `database.sql-wal` and `database.sql-shm` files, then start the application. The startup integrity check will refuse a corrupt database.
 
+For a development/beta recovery where preserving chats is not required, the Admin console provides a destructive **Reset database** control. It requires typing `RESET ALL CHATS`, permanently removes all chat and admin data plus SQLite sidecars, and recreates the database with the bundled schema. Use it only while one application task has access to the database volume; it is not a repair mechanism for production data.
+
 ## Notes
 
 ## Client-side encryption

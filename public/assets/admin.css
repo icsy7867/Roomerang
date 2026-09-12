@@ -15,4 +15,7 @@ body { background-repeat: no-repeat; background-attachment: fixed; }
 .admin-actions button:disabled { cursor: not-allowed; opacity: .45; }
 .admin-notice { color: var(--accent); }
 .admin-help { color: var(--muted); font-size: .9rem; }
+.reset-card { border-color: #7c3342; }
+.reset-card form { max-width: 390px; }
+.reset-card code { color: #ffbdc9; }
 @media (max-width: 600px) { .admin-panel { margin: 16px auto; padding: 22px; } .admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
