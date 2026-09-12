@@ -141,7 +141,11 @@ fieldset input[type="radio"] {
   font: inherit;
 }
 
-.composer .EasyMDEContainer .CodeMirror-scroll { min-height: 76px; }
+.composer .EasyMDEContainer .CodeMirror-scroll {
+  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
+}
 .composer .EasyMDEContainer .CodeMirror-cursor { border-left-color: var(--text); }
 .composer .EasyMDEContainer .CodeMirror-selected { background: #294766; }
 .composer .EasyMDEContainer .cm-formatting,
