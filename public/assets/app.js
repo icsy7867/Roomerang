@@ -31,6 +31,9 @@
     status: false,
     toolbar: ['bold', 'italic', 'heading', '|', 'code', 'link'],
   });
+  // EasyMDE always creates a side-by-side preview node. This composer has no
+  // preview control, so keep that node inert if an editor state ever enables it.
+  markdownEditor.gui.sideBySide.classList.remove('editor-preview-active-side');
   const editorValue = () => markdownEditor.value();
   const setEditorValue = value => markdownEditor.value(value);
   const setEditorPlaceholder = value => { messageField.placeholder = value; markdownEditor.codemirror.setOption('placeholder', value); };

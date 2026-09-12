@@ -84,8 +84,16 @@ fieldset input[type="radio"] {
 
 /* EasyMDE preserves Markdown text while CodeMirror highlights it during editing. */
 .composer .EasyMDEContainer {
+  display: block;
   grid-area: message;
   min-width: 0;
+}
+
+/* Side-by-side preview is intentionally not part of the chat composer.
+ * EasyMDE creates this fixed-position element even when its toolbar control
+ * is hidden; never let an accidental active class cover half the chat. */
+.composer .EasyMDEContainer .editor-preview-side {
+  display: none !important;
 }
 
 .composer .EasyMDEContainer .editor-toolbar {
