@@ -283,6 +283,7 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
 @keyframes boomerang-throw { from { transform: rotate(-90deg); } to { transform: rotate(-810deg); } }
 
 #share-dialog { width: min(560px, calc(100vw - 32px)); }
+.panel#shared-view { max-width: 70vw; }
 .share-dialog { display: grid; gap: 14px; }
 .share-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .share-dialog p { margin: 0; }
@@ -297,4 +298,8 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
   #mode-controls, #master-controls { display: grid; width: 100%; gap: 8px; }
   #chat-actions button { width: 100%; min-height: 44px; font-size: .9rem; white-space: normal; }
   .composer textarea { font-size: 16px; }
+}
+
+@media (max-width: 700px) {
+  .panel#shared-view { max-width: calc(100% - 32px); }
 }

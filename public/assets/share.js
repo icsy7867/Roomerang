@@ -38,6 +38,15 @@
     }).join('');
   };
   const unavailable = message => { status.textContent = message; };
+  const sizeForCode = () => {
+    if (window.innerWidth < 701) return;
+    const blocks = Array.from(messageElement.querySelectorAll('pre'));
+    if (!blocks.length) return;
+    const widest = Math.max(...blocks.map(block => block.scrollWidth));
+    const chrome = view.getBoundingClientRect().width - blocks[0].getBoundingClientRect().width;
+    const width = Math.min(window.innerWidth * .7, Math.max(view.getBoundingClientRect().width, widest + chrome));
+    view.style.width = `${Math.round(width)}px`;
+  };
   const request = async url => {
     const response = await fetch(url, {cache:'no-store'});
     const data = await response.json().catch(() => ({}));
@@ -84,6 +93,7 @@
       }));
       status.hidden = true;
       messageElement.hidden = false;
+      requestAnimationFrame(sizeForCode);
     } catch (error) { unavailable(error.message); }
   };
   show();
