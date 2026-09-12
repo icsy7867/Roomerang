@@ -41,9 +41,9 @@
     requestAnimationFrame(() => {
       const editor = markdownEditor.codemirror;
       const lineHeight = editor.defaultTextHeight();
-      const minimumHeight = Math.max(76, lineHeight * 3);
+      const minimumHeight = Math.max(84, lineHeight * 3 + 8);
       const contentHeight = editor.heightAtLine(editor.lineCount(), 'local');
-      const maximumHeight = lineHeight * 12;
+      const maximumHeight = minimumHeight + lineHeight * 9;
       const height = Math.max(minimumHeight, Math.min(maximumHeight, contentHeight));
       if (height !== editorHeight) {
         editor.setSize(null, height);
