@@ -250,6 +250,6 @@ $defaultDuration = ChatService::defaultDuration();
   <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
   <script src="/assets/crypto.js?v=roomerang-3" defer></script>
   <script src="/assets/easymde.min.js?v=2.21.0" defer></script>
-  <script src="/assets/app.js?v=roomerang-15" defer></script>
+  <script src="/assets/app.js?v=roomerang-16" defer></script>
 </body>
 </html>

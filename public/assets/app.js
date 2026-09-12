@@ -34,6 +34,15 @@
   // EasyMDE always creates a side-by-side preview node. This composer has no
   // preview control, so keep that node inert if an editor state ever enables it.
   markdownEditor.gui.sideBySide.classList.remove('editor-preview-active-side');
+  const keepEditorCursorVisible = () => {
+    const editor = markdownEditor.codemirror;
+    const cursor = editor.getCursor();
+    // CodeMirror normally does this itself, but the fixed-height composer can
+    // otherwise leave the active wrapped line below its scroll viewport.
+    requestAnimationFrame(() => editor.scrollIntoView(cursor, 24));
+  };
+  markdownEditor.codemirror.on('cursorActivity', keepEditorCursorVisible);
+  markdownEditor.codemirror.on('change', keepEditorCursorVisible);
   const editorValue = () => markdownEditor.value();
   const setEditorValue = value => markdownEditor.value(value);
   const setEditorPlaceholder = value => { messageField.placeholder = value; markdownEditor.codemirror.setOption('placeholder', value); };
