@@ -307,7 +307,7 @@
         const data = await request(`/api/chats/${token}/messages/${message.id}`, {method:'POST'});
         const url = new URL(`/share/${data.share.token}`, location.origin);
         url.hash = location.hash;
-        openShareDialog(url.href, 'Share this message', 'Anyone with this complete link can view this message while the chat remains active.');
+        openShareDialog(url.href, 'Throw this message', 'Anyone with this complete link can view this message while the chat remains active.');
       } catch (error) { alert(error.message); }
       finally { shareButton.disabled = false; }
     });
