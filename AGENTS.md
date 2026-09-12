@@ -31,13 +31,11 @@ public/.htaccess            Apache rewrite to the front controller
 public/assets/app.js       Chat behavior, polling, Markdown rendering, uploads
 public/assets/app.css      Main application styling
 public/assets/messages.css Message alignment, upload/drop, and form overrides
-public/assets/easymde.min.js  Vendored EasyMDE Markdown composer
-public/assets/easymde.min.css Vendored EasyMDE composer styling
 public/assets/unavailable.css Expired/invalid room page styling
 README.md                  Operator setup and deployment notes
 ```
 
-There are currently no Composer or npm build dependencies; the browser-side EasyMDE release is vendored in `public/assets`. Keep the browser-side Markdown renderer, composer, and syntax highlighting safe when changing them: message text must be escaped before being inserted into HTML, and user-provided links must be protocol-validated. Do not add a CDN dependency for cryptography; Web Crypto API support is required.
+There are currently no Composer or npm build dependencies. Keep the browser-side Markdown renderer and native textarea composer safe when changing them: message text must be escaped before being inserted into HTML, and user-provided links must be protocol-validated. Do not add a CDN dependency for cryptography; Web Crypto API support is required.
 
 ## Runtime and deployment
 
