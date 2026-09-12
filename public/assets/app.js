@@ -19,7 +19,23 @@
   let pollTimer;
   const messageField = document.querySelector('#message-body');
   const composer = document.querySelector('#message-form');
-  const updateCharacterCount = () => { document.querySelector('#char-count').textContent = `${messageField.value.length} / 12000`; };
+  const markdownEditor = new EasyMDE({
+    element: messageField,
+    autoDownloadFontAwesome: false,
+    autofocus: false,
+    forceSync: true,
+    hideIcons: ['fullscreen', 'side-by-side', 'guide'],
+    indentWithTabs: false,
+    lineWrapping: true,
+    maxHeight: '76px',
+    spellChecker: false,
+    status: false,
+    toolbar: ['bold', 'italic', 'heading', '|', 'code', 'link'],
+  });
+  const editorValue = () => markdownEditor.value();
+  const setEditorValue = value => markdownEditor.value(value);
+  const setEditorPlaceholder = value => { messageField.placeholder = value; markdownEditor.codemirror.setOption('placeholder', value); };
+  const updateCharacterCount = () => { document.querySelector('#char-count').textContent = `${editorValue().length} / 12000`; };
   const nearBottom = () => messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
   const preserveScroll = change => {
     const bottom = nearBottom();
@@ -274,8 +290,8 @@
     const send = document.querySelector('#message-form button[type="submit"]');
     const file = document.querySelector('#file-input');
     const blocked = room.read_only && !master;
-    field.disabled = blocked; send.disabled = blocked; file.disabled = blocked;
-    field.placeholder = blocked ? 'This chat is read-only. Only the Master can post.' : 'Write Markdown or paste code…\nPaste or drop an image, or use ```language for code blocks.';
+    field.disabled = blocked; markdownEditor.codemirror.setOption('readOnly', blocked); send.disabled = blocked; file.disabled = blocked;
+    setEditorPlaceholder(blocked ? 'This chat is read-only. Only the Master can post.' : 'Write Markdown or paste code…\nPaste or drop an image, or use ```language for code blocks.');
   };
   const updateUser = member => {
     currentMember = member;
@@ -374,14 +390,19 @@
     try { const data = await request(`/api/chats/${token}/join`, {method: 'POST', body: JSON.stringify({name})}); joinDialog.close(); joining = false; activate(data); }
     catch (error) { document.querySelector('#join-error').textContent = error.message; }
   });
-  messageField.addEventListener('input', updateCharacterCount);
-  messageField.addEventListener('keydown', event => {
+  markdownEditor.codemirror.on('change', updateCharacterCount);
+  markdownEditor.codemirror.on('beforeChange', (editor, change) => {
+    const removed = editor.indexFromPos(change.to) - editor.indexFromPos(change.from);
+    const inserted = change.text.join('\n').length;
+    if (editor.getValue().length - removed + inserted > 12000) change.cancel();
+  });
+  markdownEditor.codemirror.on('keydown', (_, event) => {
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
       composer.requestSubmit(composer.querySelector('button[type="submit"]'));
     }
   });
-  messageField.addEventListener('paste', event => {
+  markdownEditor.codemirror.on('paste', (_, event) => {
     const imageItem = Array.from(event.clipboardData?.items || []).find(item => item.type.startsWith('image/'));
     if (!imageItem) return;
     event.preventDefault();
@@ -402,7 +423,7 @@
     else alert('Drop a file to share it.');
   });
   composer.addEventListener('submit', async event => {
-    event.preventDefault(); const button = event.currentTarget.querySelector('button[type="submit"]'); const body = messageField.value;
+    event.preventDefault(); const button = event.currentTarget.querySelector('button[type="submit"]'); const body = editorValue();
     if (button.disabled || (!body.trim() && !pendingAttachment)) return;
     button.disabled = true;
     try {
@@ -418,7 +439,7 @@
         metadata = {kind:'text',mime:'text/markdown',name:''};
       }
       const message = await ChatCrypto.send(roomKey,token,data.buffer,metadata);
-      await display(message, {...metadata, data:data.buffer}); messageField.value = ''; pendingAttachment = undefined; updatePendingAttachment(); updateCharacterCount(); scrollToLatest();
+      await display(message, {...metadata, data:data.buffer}); setEditorValue(''); pendingAttachment = undefined; updatePendingAttachment(); updateCharacterCount(); scrollToLatest();
     }
     catch (error) { alert(error.message); } finally { button.disabled = false; }
   });

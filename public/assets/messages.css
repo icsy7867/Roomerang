@@ -82,6 +82,28 @@ fieldset input[type="radio"] {
   min-height: 96px;
 }
 
+/* EasyMDE owns its scroll viewport through its documented maxHeight option. */
+.composer .EasyMDEContainer { grid-area: message; min-width: 0; }
+.composer .EasyMDEContainer .editor-preview-side { display: none !important; }
+.composer .EasyMDEContainer .editor-toolbar { border-color: var(--line); border-radius: 8px 8px 0 0; background: #101929; }
+.composer .EasyMDEContainer .editor-toolbar button { color: var(--muted); border: 0; border-radius: 5px; min-height: 30px; padding: 3px 6px; }
+.composer .EasyMDEContainer .editor-toolbar button:hover,
+.composer .EasyMDEContainer .editor-toolbar button.active { background: #25334c; color: var(--text); }
+.composer .EasyMDEContainer .editor-toolbar .fa::before { font-family: inherit; font-size: .84rem; font-style: normal; font-weight: 750; }
+.composer .EasyMDEContainer .editor-toolbar .fa-bold::before { content: 'B'; }
+.composer .EasyMDEContainer .editor-toolbar .fa-italic::before { content: 'I'; font-style: italic; }
+.composer .EasyMDEContainer .editor-toolbar .fa-header::before { content: 'H'; }
+.composer .EasyMDEContainer .editor-toolbar .fa-code::before { content: '</>'; }
+.composer .EasyMDEContainer .editor-toolbar .fa-link::before { content: '↗'; }
+.composer .EasyMDEContainer .CodeMirror { color: var(--text); background: #0e1625; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 8px 8px; font: inherit; }
+.composer .EasyMDEContainer .CodeMirror-cursor { border-left-color: var(--text); }
+.composer .EasyMDEContainer .CodeMirror-selected { background: #294766; }
+.composer .EasyMDEContainer .cm-formatting, .composer .EasyMDEContainer .cm-header { color: #8797b2; }
+.composer .EasyMDEContainer .cm-strong { color: #f0c7ff; font-weight: 750; }
+.composer .EasyMDEContainer .cm-em { color: #c4b5fd; }
+.composer .EasyMDEContainer .cm-link, .composer .EasyMDEContainer .cm-url { color: #7dd3fc; }
+.composer .EasyMDEContainer .cm-comment { color: #d8e4f4; background: #25334c; border-radius: 4px; }
+
 #file-control { display: grid; min-width: 0; gap: 4px; }
 #file-control [hidden] { display: none !important; }
 #file-control label[hidden] { display: none !important; }
@@ -102,6 +124,7 @@ fieldset input[type="radio"] {
     padding-block: 10px;
   }
   .composer textarea { grid-area: message; min-height: 76px; max-height: 120px; }
+  .composer .EasyMDEContainer .CodeMirror-scroll { height: 76px !important; }
   #char-count { grid-area: count; align-self: start; padding-left: 2px; font-size: .72rem; line-height: 1.3; }
   #composer-actions {
     grid-area: actions;
@@ -215,6 +238,7 @@ fieldset input[type="radio"] {
   }
   #composer-actions { display: contents; }
   .composer textarea { grid-area: message; min-height: 86px; }
+  .composer .EasyMDEContainer .CodeMirror-scroll { height: 86px !important; }
   #char-count { grid-area: count; align-self: end; white-space: nowrap; }
   #file-control { grid-area: file; min-width: 0; font-size: .78rem; }
   #send-message { grid-area: send; align-self: end; }

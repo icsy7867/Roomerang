@@ -67,7 +67,7 @@ Text, images, and files share encrypted binary envelopes. An attachment is stage
 
 The server sees room/session identifiers, display names, timestamps, ciphertext lengths, and traffic patterns. This shared-room-key model does not authenticate individual senders cryptographically. History visibility is server-enforced; anyone possessing the key can decrypt older ciphertext if they obtain it. The served JavaScript must be trusted: a compromised server can change the client. There is no external analytics or CDN dependency.
 
-The message composer uses the browser's native textarea, so long and multi-line messages retain normal caret visibility, scrolling, wrapping, and keyboard behavior. Markdown is rendered safely when messages are displayed.
+The message composer uses a vendored EasyMDE build for Markdown-aware editing and syntax highlighting; it does not load editor code from a runtime CDN.
 
 Pre-release plaintext rooms are unavailable through the new API, including their old media URLs. Their existing rows are not converted or erased automatically; they are pruned through the existing expiry cleanup. Only encrypted rooms can be created by the web application.
 
