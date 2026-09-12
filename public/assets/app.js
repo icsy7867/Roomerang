@@ -36,15 +36,20 @@
   const setEditorValue = value => markdownEditor.value(value);
   const setEditorPlaceholder = value => { messageField.placeholder = value; markdownEditor.codemirror.setOption('placeholder', value); };
   const updateCharacterCount = () => { document.querySelector('#char-count').textContent = `${editorValue().length} / 12000`; };
+  let editorHeight;
   const resizeEditor = () => {
     requestAnimationFrame(() => {
       const editor = markdownEditor.codemirror;
       const lineHeight = editor.defaultTextHeight();
       const minimumHeight = Math.max(76, lineHeight * 3);
       const contentHeight = editor.heightAtLine(editor.lineCount(), 'local');
-      const height = Math.max(minimumHeight, Math.min(lineHeight * 12, contentHeight));
-      editor.setSize(null, height);
-      editor.scrollIntoView(null, lineHeight * 2);
+      const maximumHeight = lineHeight * 12;
+      const height = Math.max(minimumHeight, Math.min(maximumHeight, contentHeight));
+      if (height !== editorHeight) {
+        editor.setSize(null, height);
+        editorHeight = height;
+      }
+      if (contentHeight > maximumHeight) editor.scrollIntoView(null, lineHeight * 2);
     });
   };
   window.addEventListener('resize', resizeEditor);
@@ -314,6 +319,7 @@
   };
   const activate = async data => {
     landing.hidden = true; unavailable.hidden = true; chat.hidden = false; updateUser(data.member); updateMeta(data.room, data.member);
+    editorHeight = undefined;
     resizeEditor();
     lastId = data.messages.length ? Number(data.messages.at(-1).id) : 0;
     oldestId = data.messages.length ? Number(data.messages[0].id) : 0;
