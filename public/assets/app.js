@@ -37,6 +37,7 @@
   const setEditorPlaceholder = value => { messageField.placeholder = value; markdownEditor.codemirror.setOption('placeholder', value); };
   const updateCharacterCount = () => { document.querySelector('#char-count').textContent = `${editorValue().length} / 12000`; };
   let editorHeight;
+  let attachmentControlSized = false;
   const resizeEditor = () => {
     requestAnimationFrame(() => {
       const editor = markdownEditor.codemirror;
@@ -48,6 +49,13 @@
       if (height !== editorHeight) {
         editor.setSize(null, height);
         editorHeight = height;
+      }
+      if (!attachmentControlSized) {
+        const initialHeight = Math.round(editor.getWrapperElement().parentElement.getBoundingClientRect().height);
+        if (initialHeight > 0) {
+          composer.style.setProperty('--attachment-control-size', `${initialHeight}px`);
+          attachmentControlSized = true;
+        }
       }
     });
   };
@@ -319,6 +327,7 @@
   const activate = async data => {
     landing.hidden = true; unavailable.hidden = true; chat.hidden = false; updateUser(data.member); updateMeta(data.room, data.member);
     editorHeight = undefined;
+    attachmentControlSized = false;
     resizeEditor();
     lastId = data.messages.length ? Number(data.messages.at(-1).id) : 0;
     oldestId = data.messages.length ? Number(data.messages[0].id) : 0;
