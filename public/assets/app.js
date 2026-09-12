@@ -49,7 +49,6 @@
         editor.setSize(null, height);
         editorHeight = height;
       }
-      if (contentHeight > maximumHeight) editor.scrollIntoView(null, lineHeight * 2);
     });
   };
   window.addEventListener('resize', resizeEditor);
