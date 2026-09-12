@@ -40,9 +40,9 @@
     requestAnimationFrame(() => {
       const editor = markdownEditor.codemirror;
       const lineHeight = editor.defaultTextHeight();
-      const scroll = editor.getScrollInfo();
       const minimumHeight = Math.max(76, lineHeight * 3);
-      const height = Math.max(minimumHeight, Math.min(lineHeight * 12, scroll.height));
+      const contentHeight = editor.heightAtLine(editor.lineCount(), 'local');
+      const height = Math.max(minimumHeight, Math.min(lineHeight * 12, contentHeight));
       editor.setSize(null, height);
       editor.scrollIntoView(null, lineHeight * 2);
     });
