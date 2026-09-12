@@ -118,13 +118,12 @@ fieldset input[type="radio"] {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 270px;
     grid-template-areas: 'message actions' 'count actions';
-    grid-template-rows: minmax(76px, 120px) auto;
+    grid-template-rows: auto auto;
     column-gap: 18px;
     row-gap: 3px;
     padding-block: 10px;
   }
   .composer textarea { grid-area: message; min-height: 76px; max-height: 120px; }
-  .composer .EasyMDEContainer .CodeMirror-scroll { height: 76px !important; }
   #char-count { grid-area: count; align-self: start; padding-left: 2px; font-size: .72rem; line-height: 1.3; }
   #composer-actions {
     grid-area: actions;
@@ -238,7 +237,6 @@ fieldset input[type="radio"] {
   }
   #composer-actions { display: contents; }
   .composer textarea { grid-area: message; min-height: 86px; }
-  .composer .EasyMDEContainer .CodeMirror-scroll { height: 86px !important; }
   #char-count { grid-area: count; align-self: end; white-space: nowrap; }
   #file-control { grid-area: file; min-width: 0; font-size: .78rem; }
   #send-message { grid-area: send; align-self: end; }

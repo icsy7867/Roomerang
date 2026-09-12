@@ -27,7 +27,7 @@
     hideIcons: ['fullscreen', 'side-by-side', 'guide'],
     indentWithTabs: false,
     lineWrapping: true,
-    maxHeight: '76px',
+    minHeight: '76px',
     spellChecker: false,
     status: false,
     toolbar: ['bold', 'italic', 'heading', '|', 'code', 'link'],
@@ -36,6 +36,18 @@
   const setEditorValue = value => markdownEditor.value(value);
   const setEditorPlaceholder = value => { messageField.placeholder = value; markdownEditor.codemirror.setOption('placeholder', value); };
   const updateCharacterCount = () => { document.querySelector('#char-count').textContent = `${editorValue().length} / 12000`; };
+  const resizeEditor = () => {
+    requestAnimationFrame(() => {
+      const editor = markdownEditor.codemirror;
+      const lineHeight = editor.defaultTextHeight();
+      const scroll = editor.getScrollInfo();
+      const minimumHeight = Math.max(76, lineHeight * 3);
+      const height = Math.max(minimumHeight, Math.min(lineHeight * 12, scroll.height));
+      editor.setSize(null, height);
+      editor.scrollIntoView(null, lineHeight * 2);
+    });
+  };
+  window.addEventListener('resize', resizeEditor);
   const nearBottom = () => messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
   const preserveScroll = change => {
     const bottom = nearBottom();
@@ -302,6 +314,7 @@
   };
   const activate = async data => {
     landing.hidden = true; unavailable.hidden = true; chat.hidden = false; updateUser(data.member); updateMeta(data.room, data.member);
+    resizeEditor();
     lastId = data.messages.length ? Number(data.messages.at(-1).id) : 0;
     oldestId = data.messages.length ? Number(data.messages[0].id) : 0;
     moreHistory = data.messages.length === 25;
@@ -390,7 +403,7 @@
     try { const data = await request(`/api/chats/${token}/join`, {method: 'POST', body: JSON.stringify({name})}); joinDialog.close(); joining = false; activate(data); }
     catch (error) { document.querySelector('#join-error').textContent = error.message; }
   });
-  markdownEditor.codemirror.on('change', updateCharacterCount);
+  markdownEditor.codemirror.on('change', () => { updateCharacterCount(); resizeEditor(); });
   markdownEditor.codemirror.on('beforeChange', (editor, change) => {
     const removed = editor.indexFromPos(change.to) - editor.indexFromPos(change.from);
     const inserted = change.text.join('\n').length;
