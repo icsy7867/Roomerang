@@ -342,20 +342,24 @@
     const date = new Date(room.expires_at * 1000);
     const countdown = formatCountdown(room.expires_at);
     const countdownView = document.querySelector('#room-countdown');
-    document.querySelector('#room-meta').textContent = `${room.history_mode === 'all' ? 'full history' : 'from joining'}${room.read_only ? ' · read-only' : ''}`;
     countdownView.textContent = `${countdown} left`;
     countdownView.title = `Expires ${date.toLocaleString()}`;
     countdownView.setAttribute('aria-label', `Room expires in ${countdown}`);
     if (!countdownTimer) countdownTimer = setInterval(() => updateMeta(currentRoom), 15000);
     const controls = document.querySelector('#master-controls');
     const modeButton = document.querySelector('#readonly-toggle');
+    const modeInfo = document.querySelector('#mode-info');
+    const history = document.querySelector('#history-meta');
+    const historyInfo = document.querySelector('#history-info');
     const master = Boolean(member?.is_master);
     controls.hidden = !master;
-    modeButton.textContent = room.read_only ? 'Read-Only Mode' : 'Chat Mode';
+    modeButton.querySelector('.mode-label').textContent = room.read_only ? 'Read-Only Mode' : 'Chat Mode';
     modeButton.classList.toggle('chat-mode', !room.read_only);
     modeButton.classList.toggle('read-only-mode', Boolean(room.read_only));
     modeButton.disabled = !master;
-    modeButton.title = master ? 'Click to switch room mode' : 'Room mode (Master only can change this)';
+    modeInfo.title = master ? 'Click the room mode button to switch between Chat Mode and Read-Only Mode.' : 'Chat Mode lets members post. Read-Only Mode prevents non-Master members from posting.';
+    history.querySelector('.history-label').textContent = room.history_mode === 'all' ? 'History: Full' : 'History: From joining';
+    historyInfo.title = room.history_mode === 'all' ? 'Full history: members can see messages sent before they joined.' : 'From joining: members can see messages sent after they joined.';
     const field = messageField;
     const send = document.querySelector('#message-form button[type="submit"]');
     const file = document.querySelector('#file-input');
@@ -540,7 +544,7 @@
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && menuToggle.getAttribute('aria-expanded') === 'true') { closeMenu(); menuToggle.focus(); } });
   menuActions.addEventListener('click', event => {
     const button = event.target.closest('button');
-    if (button && button.id !== 'readonly-toggle') closeMenu();
+    if (button) closeMenu();
   });
   const filePreview = document.querySelector('#file-preview');
   filePreview.addEventListener('click', event => { if (event.target === filePreview) filePreview.close(); });

@@ -214,9 +214,9 @@ $defaultDuration = ChatService::defaultDuration();
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111827">
   <title>Roomerang</title>
-  <link rel="stylesheet" href="/assets/app.css?v=roomerang-3">
+  <link rel="stylesheet" href="/assets/app.css?v=roomerang-4">
   <link rel="stylesheet" href="/assets/easymde.min.css?v=2.21.0">
-  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-21">
+  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-22">
   <link rel="stylesheet" href="/assets/unavailable.css?v=roomerang-2">
 </head>
 <body>
@@ -258,10 +258,10 @@ $defaultDuration = ChatService::defaultDuration();
     <section id="chat" hidden>
       <header class="chat-header">
         <a href="/" class="brand"><img class="brand-logo" src="/assets/roomerang.svg?v=1" alt=""><span class="brand-name">Roomerang</span></a>
-        <div id="room-meta"></div><div id="user-meta"></div>
+        <div id="user-meta"></div>
         <button id="chat-menu-toggle" type="button" aria-label="Chat options" aria-controls="chat-actions" aria-expanded="false"><span aria-hidden="true">☰</span></button>
         <div id="chat-actions">
-          <div id="mode-controls"><button id="readonly-toggle" class="quiet" type="button" disabled></button><div id="master-controls" hidden><button id="users-button" class="quiet" type="button">Active users</button></div></div>
+          <div id="mode-controls"><div id="master-controls" hidden><button id="users-button" class="quiet" type="button">Active users</button></div></div>
           <button id="copy-link" class="quiet" type="button" title="Throw this room" aria-label="Throw this room"><img class="share-boomerang" src="/assets/roomerang.svg?v=1" alt=""></button>
         </div>
       </header>
@@ -280,7 +280,7 @@ $defaultDuration = ChatService::defaultDuration();
 
   <dialog id="join-dialog"><form id="join-form" method="dialog"><h2>Join this chat</h2><p>Choose a name for this chat. You can keep the suggested one.</p><label>Your name<input id="join-name" maxlength="40" required></label><button class="primary" type="submit">Join chat</button><p id="join-error" class="error"></p></form></dialog>
   <dialog id="users-dialog"><form method="dialog"><h2>Active users</h2><div id="active-users"></div><p id="moderation-error" class="error"></p><button class="quiet" value="cancel">Close</button></form></dialog>
-  <dialog id="share-dialog"><form method="dialog" class="share-dialog"><header><strong id="share-title">Throw this room</strong><button class="quiet" value="cancel">Close</button></header><p id="share-description">Anyone with this complete link can join this room.</p><label>Link<input id="share-url" type="text" readonly spellcheck="false"></label><button id="share-copy" class="primary" type="button">Copy link</button></form></dialog>
+  <dialog id="share-dialog"><form method="dialog" class="share-dialog"><header><strong id="share-title">Throw this room</strong><button class="quiet" value="cancel">Close</button></header><p id="share-description">Anyone with this complete link can join this room.</p><label>Link<input id="share-url" type="text" readonly spellcheck="false"></label><button id="share-copy" class="primary" type="button">Copy link</button><section class="room-info"><h3>Room Info</h3><div class="room-info-options"><span class="room-info-control"><span id="history-meta" class="room-info-chip"><span class="history-label">History: Full</span></span><span id="history-info" class="info-icon" tabindex="0" aria-label="History information">i</span></span><span class="room-info-control"><button id="readonly-toggle" class="room-info-chip" type="button" disabled><span class="mode-label">Chat Mode</span></button><span id="mode-info" class="info-icon" tabindex="0" aria-label="Room mode information">i</span></span></div></section></form></dialog>
   <dialog id="file-preview"><form method="dialog" class="preview-dialog"><header><strong id="preview-title">File preview</strong><button class="quiet" value="cancel">Close</button></header><div id="preview-content"></div></form></dialog>
   <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="share-message quiet" type="button" title="Throw this message" aria-label="Throw this message"><img class="share-boomerang" src="/assets/roomerang.svg?v=1" alt=""></button><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
   <script src="/assets/crypto.js?v=roomerang-3" defer></script>
@@ -288,7 +288,7 @@ $defaultDuration = ChatService::defaultDuration();
   <script src="/assets/share.js?v=roomerang-4" defer></script>
   <?php else: ?>
   <script src="/assets/easymde.min.js?v=2.21.0" defer></script>
-  <script src="/assets/app.js?v=roomerang-30" defer></script>
+  <script src="/assets/app.js?v=roomerang-31" defer></script>
   <?php endif ?>
 </body>
 </html>

@@ -224,8 +224,6 @@ fieldset input[type="radio"] {
     white-space: nowrap;
   }
 
-  .chat-header #room-meta { display: none; }
-
   #user-meta {
     margin-left: auto;
     font-size: .8rem;
@@ -309,6 +307,15 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
 .share-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .share-dialog p { margin: 0; }
 #share-url { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; }
+.room-info { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.room-info h3 { margin: 0; color: var(--muted); font-size: .9rem; }
+.room-info-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.room-info-control { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.room-info-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #1a2940; color: var(--text); font-size: .85rem; white-space: nowrap; }
+button.room-info-chip { cursor: default; }
+button.room-info-chip:not(:disabled) { cursor: pointer; }
+.info-icon { display: inline-grid; place-items: center; width: 18px; height: 18px; border: 1px solid #60708d; border-radius: 50%; color: #b8c5da; font-size: .72rem; font-weight: 750; line-height: 1; cursor: help; }
+.info-icon:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (max-width: 1000px) {
   #chat-menu-toggle { display: block; flex: 0 0 auto; width: 44px; height: 44px; padding: 4px; font-size: 24px; background: transparent; }
