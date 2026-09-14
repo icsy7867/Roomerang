@@ -20,7 +20,7 @@ try {
     putenv('PASTE_CHAT_DB=' . $path);
     $db = App\Database::connection();
     check(strtolower((string)$db->query('PRAGMA journal_mode')->fetchColumn()) === 'delete', 'startup converts WAL database to rollback journaling');
-    check((int)$db->query('PRAGMA synchronous')->fetchColumn() === 2, 'full synchronous mode is enabled');
+    check((int)$db->query('PRAGMA synchronous')->fetchColumn() === 1, 'normal synchronous mode is enabled');
     check((int)$db->query('PRAGMA busy_timeout')->fetchColumn() === 10000, 'busy timeout is ten seconds');
     check($db->query('SELECT value FROM probe')->fetchColumn() === 'preserved', 'journal transition preserves existing data');
     $db = null;

@@ -47,7 +47,7 @@ final class Database
         if ($journalMode !== 'delete') {
             throw new \RuntimeException('Could not enable SQLite rollback journaling.');
         }
-        $db->exec('PRAGMA busy_timeout = 10000; PRAGMA foreign_keys = ON; PRAGMA synchronous = FULL;');
+        $db->exec('PRAGMA busy_timeout = 10000; PRAGMA foreign_keys = ON; PRAGMA synchronous = NORMAL;');
         return $db;
     }
 

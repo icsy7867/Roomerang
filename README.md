@@ -93,7 +93,7 @@ Mounted data directories and existing database files (including SQLite WAL/SHM f
 
 ### SQLite on network storage
 
-Roomerang uses SQLite rollback journaling (`journal_mode=DELETE`) instead of WAL. This avoids WAL's shared-memory sidecar, which is incompatible with network filesystems such as NFS/EFS. Rollback journaling reduces concurrent read/write capacity, so the application waits up to ten seconds for a short-lived database lock and uses `synchronous=FULL` for durability.
+Roomerang uses SQLite rollback journaling (`journal_mode=DELETE`) instead of WAL. This avoids WAL's shared-memory sidecar, which is incompatible with network filesystems such as NFS/EFS. Rollback journaling reduces concurrent read/write capacity, so the application waits up to ten seconds for a short-lived database lock and uses `synchronous=NORMAL` to reduce network-storage sync latency. This accepts a small risk to the most recent transaction during an infrastructure crash; retain verified backups outside EFS.
 
 Network storage remains a temporary compatibility measure rather than an ideal SQLite production backend. If deploying a single ECS/Fargate task with EFS, keep the service at a desired count of one and use an ECS rolling deployment with `minimumHealthyPercent: 0` and `maximumPercent: 100`. This intentionally permits a short outage so ECS stops the previous task before starting the replacement; no two tasks may mount and access the same SQLite database. Do not use this configuration with a blue/green deployment controller. Take a verified Admin backup before each deployment and retain it outside EFS.
 
