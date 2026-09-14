@@ -34,6 +34,11 @@
     status: false,
     toolbar: ['bold', 'italic', 'heading', '|', 'code', 'link'],
   });
+  // Native mobile selection can only reach lines CodeMirror has rendered. Drafts
+  // are capped at 12,000 characters, so keeping the complete draft in the DOM
+  // lets Android's Select all include every line without a material cost.
+  markdownEditor.codemirror.setOption('viewportMargin', Infinity);
+  const usesMobileEditorKeys = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
   const editorValue = () => markdownEditor.value();
   const setEditorValue = value => markdownEditor.value(value);
   const setEditorPlaceholder = value => { messageField.placeholder = value; markdownEditor.codemirror.setOption('placeholder', value); };
@@ -482,7 +487,7 @@
     if (editor.getValue().length - removed + inserted > 12000) change.cancel();
   });
   markdownEditor.codemirror.on('keydown', (_, event) => {
-    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && !usesMobileEditorKeys()) {
       event.preventDefault();
       composer.requestSubmit(composer.querySelector('button[type="submit"]'));
     }
