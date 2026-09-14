@@ -315,8 +315,10 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
 button.room-info-chip { cursor: default; }
 button.room-info-chip:not(:disabled) { cursor: pointer; }
 .info-icon { position: relative; display: inline-grid; place-items: center; width: 18px; height: 18px; border: 1px solid #60708d; border-radius: 50%; color: #b8c5da; font-size: .72rem; font-weight: 750; line-height: 1; cursor: help; }
-.info-icon::after { content: attr(data-tooltip); position: absolute; z-index: 20; left: 50%; bottom: calc(100% + 8px); width: max-content; max-width: min(280px, calc(100vw - 48px)); padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; color: var(--text); background: #0e1625; box-shadow: 0 8px 20px #0008; font-size: .78rem; font-weight: 400; line-height: 1.35; text-align: left; white-space: normal; opacity: 0; pointer-events: none; transform: translate(-50%, 3px); transition: opacity .12s ease, transform .12s ease; }
+.info-icon::after { content: attr(data-tooltip); position: absolute; z-index: 20; left: 50%; bottom: calc(100% + 8px); width: min(280px, calc(100vw - 48px)); padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; color: var(--text); background: #0e1625; box-shadow: 0 8px 20px #0008; font-size: .78rem; font-weight: 400; line-height: 1.35; text-align: left; white-space: normal; opacity: 0; pointer-events: none; transform: translate(-50%, 3px); transition: opacity .12s ease, transform .12s ease; }
 .info-icon:hover::after, .info-icon:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+#history-info::after { left: 0; transform: translateY(3px); }
+#history-info:hover::after, #history-info:focus-visible::after { transform: translateY(0); }
 .info-icon:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (max-width: 1000px) {
