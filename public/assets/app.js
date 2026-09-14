@@ -91,6 +91,13 @@
     return `${a[Math.floor(Math.random() * a.length)]} ${b[Math.floor(Math.random() * b.length)]}`;
   };
   const escape = value => value.replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const formatTimestamp = timestamp => {
+    const date = new Date(timestamp * 1000);
+    const now = new Date();
+    const time = date.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+    if (date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate()) return time;
+    return `${date.toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric'})} · ${time}`;
+  };
   const highlight = (code, language) => {
     let html = escape(code);
     const detected = language.trim() || (/^\s*<\?php\b/.test(code) ? 'php' : /^\s*(?:SELECT|INSERT|UPDATE|DELETE|CREATE)\b/i.test(code) ? 'sql' : /^\s*(?:const|let|var|function|import|export)\b/.test(code) ? 'javascript' : '');
@@ -256,7 +263,7 @@
     element.classList.toggle('mine', message.is_mine === true || message.is_mine === 1);
     element.classList.toggle('has-image', Boolean(message.image_url));
     element.querySelector('.author').textContent = message.display_name;
-    element.querySelector('time').textContent = new Date(message.created_at * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+    element.querySelector('time').textContent = formatTimestamp(message.created_at);
     const messageBody = element.querySelector('.message-body');
     if (contentError) {
       messageBody.textContent = contentError;

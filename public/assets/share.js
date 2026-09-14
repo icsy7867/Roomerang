@@ -5,6 +5,13 @@
   const shareToken = view.dataset.shareToken;
   const app = document.querySelector('#app');
   const escape = value => value.replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+  const formatTimestamp = timestamp => {
+    const date = new Date(timestamp * 1000);
+    const now = new Date();
+    const time = date.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+    if (date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate()) return time;
+    return `${date.toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric'})} · ${time}`;
+  };
   const highlight = (code, language) => {
     let html = escape(code);
     const detected = language.trim() || (/^\s*<\?php\b/.test(code) ? 'php' : /^\s*(?:SELECT|INSERT|UPDATE|DELETE|CREATE)\b/i.test(code) ? 'sql' : /^\s*(?:const|let|var|function|import|export)\b/.test(code) ? 'javascript' : '');
@@ -72,7 +79,7 @@
         fileData = content.data.slice(content.text_bytes);
       }
       messageElement.querySelector('.author').textContent = shared.display_name;
-      messageElement.querySelector('time').textContent = new Date(shared.created_at * 1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      messageElement.querySelector('time').textContent = formatTimestamp(shared.created_at);
       const body = messageElement.querySelector('.message-body');
       if (text) body.innerHTML = renderMarkdown(text);
       if (content.kind === 'file' || content.kind === 'attachment') {

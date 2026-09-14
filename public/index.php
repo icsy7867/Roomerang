@@ -284,10 +284,10 @@ $defaultDuration = ChatService::defaultDuration();
   <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="share-message quiet" type="button" title="Throw this message" aria-label="Throw this message"><img class="share-boomerang" src="/assets/roomerang.svg?v=1" alt=""></button><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
   <script src="/assets/crypto.js?v=roomerang-3" defer></script>
   <?php if ($shareToken !== null): ?>
-  <script src="/assets/share.js?v=roomerang-3" defer></script>
+  <script src="/assets/share.js?v=roomerang-4" defer></script>
   <?php else: ?>
   <script src="/assets/easymde.min.js?v=2.21.0" defer></script>
-  <script src="/assets/app.js?v=roomerang-27" defer></script>
+  <script src="/assets/app.js?v=roomerang-28" defer></script>
   <?php endif ?>
 </body>
 </html>
