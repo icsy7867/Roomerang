@@ -256,7 +256,7 @@ fieldset input[type="radio"] {
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas: 'message message message' 'count file send';
     gap: 8px;
-    padding: 10px 12px max(5px, env(safe-area-inset-bottom));
+    padding: 10px 12px 12px;
   }
   #composer-actions { display: contents; }
   .composer textarea { grid-area: message; min-height: 86px; }

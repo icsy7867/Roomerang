@@ -216,7 +216,7 @@ $defaultDuration = ChatService::defaultDuration();
   <title>Roomerang</title>
   <link rel="stylesheet" href="/assets/app.css?v=roomerang-4">
   <link rel="stylesheet" href="/assets/easymde.min.css?v=2.21.0">
-  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-28">
+  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-29">
   <link rel="stylesheet" href="/assets/unavailable.css?v=roomerang-2">
 </head>
 <body>
