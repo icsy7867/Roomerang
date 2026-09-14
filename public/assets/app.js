@@ -504,7 +504,7 @@
     requestAnimationFrame(() => shareUrl.select());
   };
   document.querySelector('#copy-link').addEventListener('click', () => {
-    openShareDialog(location.href, 'Share this room', 'Anyone with this complete link can join this room.');
+    openShareDialog(location.href, 'Throw this room', 'Anyone with this complete link can join this room.');
   });
   document.querySelector('#share-copy').addEventListener('click', event => copy(shareUrl.value, event.currentTarget));
   const menuToggle = document.querySelector('#chat-menu-toggle');

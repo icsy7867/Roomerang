@@ -279,7 +279,7 @@ $defaultDuration = ChatService::defaultDuration();
 
   <dialog id="join-dialog"><form id="join-form" method="dialog"><h2>Join this chat</h2><p>Choose a name for this chat. You can keep the suggested one.</p><label>Your name<input id="join-name" maxlength="40" required></label><button class="primary" type="submit">Join chat</button><p id="join-error" class="error"></p></form></dialog>
   <dialog id="users-dialog"><form method="dialog"><h2>Active users</h2><div id="active-users"></div><p id="moderation-error" class="error"></p><button class="quiet" value="cancel">Close</button></form></dialog>
-  <dialog id="share-dialog"><form method="dialog" class="share-dialog"><header><strong id="share-title">Share this room</strong><button class="quiet" value="cancel">Close</button></header><p id="share-description">Anyone with this complete link can join this room.</p><label>Link<input id="share-url" type="text" readonly spellcheck="false"></label><button id="share-copy" class="primary" type="button">Copy link</button></form></dialog>
+  <dialog id="share-dialog"><form method="dialog" class="share-dialog"><header><strong id="share-title">Throw this room</strong><button class="quiet" value="cancel">Close</button></header><p id="share-description">Anyone with this complete link can join this room.</p><label>Link<input id="share-url" type="text" readonly spellcheck="false"></label><button id="share-copy" class="primary" type="button">Copy link</button></form></dialog>
   <dialog id="file-preview"><form method="dialog" class="preview-dialog"><header><strong id="preview-title">File preview</strong><button class="quiet" value="cancel">Close</button></header><div id="preview-content"></div></form></dialog>
   <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="share-message quiet" type="button" title="Throw this message" aria-label="Throw this message"><img class="share-boomerang" src="/assets/roomerang.svg?v=1" alt=""></button><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
   <script src="/assets/crypto.js?v=roomerang-3" defer></script>
@@ -287,7 +287,7 @@ $defaultDuration = ChatService::defaultDuration();
   <script src="/assets/share.js?v=roomerang-4" defer></script>
   <?php else: ?>
   <script src="/assets/easymde.min.js?v=2.21.0" defer></script>
-  <script src="/assets/app.js?v=roomerang-28" defer></script>
+  <script src="/assets/app.js?v=roomerang-29" defer></script>
   <?php endif ?>
 </body>
 </html>
