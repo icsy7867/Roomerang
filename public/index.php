@@ -216,7 +216,7 @@ $defaultDuration = ChatService::defaultDuration();
   <title>Roomerang</title>
   <link rel="stylesheet" href="/assets/app.css?v=roomerang-4">
   <link rel="stylesheet" href="/assets/easymde.min.css?v=2.21.0">
-  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-25">
+  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-26">
   <link rel="stylesheet" href="/assets/unavailable.css?v=roomerang-2">
 </head>
 <body>
@@ -263,6 +263,7 @@ $defaultDuration = ChatService::defaultDuration();
         <div id="chat-actions">
           <div id="mode-controls"><div id="master-controls" hidden><button id="users-button" class="quiet" type="button">Active users</button></div></div>
           <button id="copy-link" class="quiet" type="button" title="Throw this room" aria-label="Throw this room"><img class="share-boomerang" src="/assets/roomerang.svg?v=1" alt=""></button>
+          <span id="mobile-room-countdown" class="room-countdown" role="timer"></span>
         </div>
       </header>
       <div id="messages" aria-live="polite"></div>
@@ -273,7 +274,7 @@ $defaultDuration = ChatService::defaultDuration();
           <section id="file-control"><label for="file-input">Attach file (8 MB)</label><input id="file-input" type="file"><section id="attachment-tile" hidden aria-live="polite"><span id="attachment-icon" aria-hidden="true"></span><span id="attachment-name"></span><button id="clear-attachment" class="quiet" type="button" aria-label="Remove attachment" title="Remove attachment">×</button></section></section>
           <button id="send-message" class="primary" type="submit">Send</button>
         </div>
-        <span id="room-countdown" role="timer"></span>
+        <span id="room-countdown" class="room-countdown" role="timer"></span>
       </form>
     </section>
   </main>
@@ -288,7 +289,7 @@ $defaultDuration = ChatService::defaultDuration();
   <script src="/assets/share.js?v=roomerang-4" defer></script>
   <?php else: ?>
   <script src="/assets/easymde.min.js?v=2.21.0" defer></script>
-  <script src="/assets/app.js?v=roomerang-33" defer></script>
+  <script src="/assets/app.js?v=roomerang-34" defer></script>
   <?php endif ?>
 </body>
 </html>

@@ -341,10 +341,11 @@
     currentRoom = room;
     const date = new Date(room.expires_at * 1000);
     const countdown = formatCountdown(room.expires_at);
-    const countdownView = document.querySelector('#room-countdown');
-    countdownView.textContent = `${countdown} left`;
-    countdownView.title = `Expires ${date.toLocaleString()}`;
-    countdownView.setAttribute('aria-label', `Room expires in ${countdown}`);
+    document.querySelectorAll('.room-countdown').forEach(countdownView => {
+      countdownView.textContent = `${countdown} left`;
+      countdownView.title = `Expires ${date.toLocaleString()}`;
+      countdownView.setAttribute('aria-label', `Room expires in ${countdown}`);
+    });
     if (!countdownTimer) countdownTimer = setInterval(() => updateMeta(currentRoom), 15000);
     const controls = document.querySelector('#master-controls');
     const modeButton = document.querySelector('#readonly-toggle');
