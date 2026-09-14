@@ -357,9 +357,13 @@
     modeButton.classList.toggle('chat-mode', !room.read_only);
     modeButton.classList.toggle('read-only-mode', Boolean(room.read_only));
     modeButton.disabled = !master;
-    modeInfo.title = master ? 'Click the room mode button to switch between Chat Mode and Read-Only Mode.' : 'Chat Mode lets members post. Read-Only Mode prevents non-Master members from posting.';
+    const modeDescription = master ? 'Click the room mode button to switch between Chat Mode and Read-Only Mode.' : 'Chat Mode lets members post. Read-Only Mode prevents non-Master members from posting.';
+    const historyDescription = room.history_mode === 'all' ? 'Full history: members can see messages sent before they joined.' : 'From joining: members can see messages sent after they joined.';
+    modeInfo.title = modeDescription;
+    modeInfo.dataset.tooltip = modeDescription;
     history.querySelector('.history-label').textContent = room.history_mode === 'all' ? 'History: Full' : 'History: From joining';
-    historyInfo.title = room.history_mode === 'all' ? 'Full history: members can see messages sent before they joined.' : 'From joining: members can see messages sent after they joined.';
+    historyInfo.title = historyDescription;
+    historyInfo.dataset.tooltip = historyDescription;
     const field = messageField;
     const send = document.querySelector('#message-form button[type="submit"]');
     const file = document.querySelector('#file-input');
