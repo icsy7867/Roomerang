@@ -333,3 +333,9 @@ button.room-info-chip:not(:disabled) { cursor: pointer; }
 @media (max-width: 700px) {
   .panel#shared-view { max-width: calc(100% - 32px); }
 }
+
+@media (max-width: 700px) {
+  body, #app { min-height: 100svh; }
+  body { background-attachment: scroll; }
+  #chat { height: 100svh; }
+}
