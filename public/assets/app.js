@@ -6,6 +6,7 @@
   const chat = document.querySelector('#chat');
   const messages = document.querySelector('#messages');
   const joinDialog = document.querySelector('#join-dialog');
+  const setChatViewport = active => document.documentElement.classList.toggle('chat-active', active);
   let lastId = 0;
   let joining = false;
   let roomKey;
@@ -380,6 +381,7 @@
     badge.setAttribute('aria-label', `Your username: ${badge.title}`);
   };
   const activate = async data => {
+    setChatViewport(true);
     landing.hidden = true; unavailable.hidden = true; chat.hidden = false; updateUser(data.member); updateMeta(data.room, data.member);
     editorHeight = undefined;
     attachmentControlSized = false;
@@ -421,6 +423,7 @@
     joinDialog.showModal();
   };
   const showUnavailable = () => {
+    setChatViewport(false);
     landing.hidden = true;
     chat.hidden = true;
     unavailable.hidden = false;

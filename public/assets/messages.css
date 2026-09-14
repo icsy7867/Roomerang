@@ -338,4 +338,8 @@ button.room-info-chip:not(:disabled) { cursor: pointer; }
   body, #app { min-height: 100svh; }
   body { background-attachment: scroll; }
   #chat { height: 100svh; }
+  html.chat-active, html.chat-active body { height: 100svh; overflow: hidden; overscroll-behavior: none; }
+  html.chat-active #app { height: 100svh; min-height: 0; overflow: hidden; }
+  html.chat-active #chat { max-height: 100svh; overflow: hidden; }
+  html.chat-active #messages { touch-action: pan-y; }
 }
