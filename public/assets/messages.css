@@ -129,7 +129,7 @@ fieldset input[type="radio"] {
 #attachment-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .75rem; }
 #clear-attachment { flex: 0 0 32px; min-height: 36px; font-size: 20px; }
 
-@media (min-width: 701px) {
+@media (min-width: 701px) and (hover: hover) and (pointer: fine) {
   .composer {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 270px;
@@ -250,7 +250,7 @@ fieldset input[type="radio"] {
 
 }
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
   .composer {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -334,12 +334,12 @@ button.room-info-chip:not(:disabled) { cursor: pointer; }
   .panel#shared-view { max-width: calc(100% - 32px); }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-width: 1000px) and (pointer: coarse) {
   body, #app { min-height: 100svh; }
   body { background-attachment: scroll; }
-  #chat { height: 100svh; }
+  #chat { height: calc(100svh - env(safe-area-inset-bottom)); }
   html.chat-active, html.chat-active body { height: 100svh; overflow: hidden; overscroll-behavior: none; }
   html.chat-active #app { height: 100svh; min-height: 0; overflow: hidden; }
-  html.chat-active #chat { max-height: 100svh; overflow: hidden; }
+  html.chat-active #chat { max-height: calc(100svh - env(safe-area-inset-bottom)); overflow: hidden; }
   html.chat-active #messages { touch-action: pan-y; }
 }
