@@ -344,7 +344,8 @@ button.room-info-chip:not(:disabled) { cursor: pointer; }
   html.chat-active #messages { touch-action: pan-y; }
 }
 
-@media (pointer: coarse) and (orientation: landscape) {
+/* A portrait phone with its keyboard open can also match landscape. */
+@media (min-width: 701px) and (pointer: coarse) and (orientation: landscape) {
   .composer {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(260px, 34vw);
