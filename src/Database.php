@@ -40,7 +40,14 @@ final class Database
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
-        $db->exec('PRAGMA busy_timeout = 5000; PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
+        // WAL relies on a shared-memory sidecar and is unsuitable for the NFS
+        // volumes commonly used by container platforms. Rollback journaling is
+        // less concurrent, but avoids the WAL shared-memory coordination.
+        $journalMode = strtolower((string)$db->query('PRAGMA journal_mode = DELETE')->fetchColumn());
+        if ($journalMode !== 'delete') {
+            throw new \RuntimeException('Could not enable SQLite rollback journaling.');
+        }
+        $db->exec('PRAGMA busy_timeout = 10000; PRAGMA foreign_keys = ON; PRAGMA synchronous = FULL;');
         return $db;
     }
 

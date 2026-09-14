@@ -91,6 +91,12 @@ The entire container runs as `paste` (UID/GID `1000:1000`), including Apache, PH
 
 Mounted data directories and existing database files (including SQLite WAL/SHM files) must be writable by UID/GID 1000. Existing volumes from older images may be owned by `www-data` (33); update their ownership to `1000:1000` once before upgrading. Startup no longer performs privileged ownership changes. For rootless Podman, use its user-namespace mapping when preparing volume ownership. Fresh named volumes inherit the image's data-directory ownership.
 
+### SQLite on network storage
+
+Roomerang uses SQLite rollback journaling (`journal_mode=DELETE`) instead of WAL. This avoids WAL's shared-memory sidecar, which is incompatible with network filesystems such as NFS/EFS. Rollback journaling reduces concurrent read/write capacity, so the application waits up to ten seconds for a short-lived database lock and uses `synchronous=FULL` for durability.
+
+Network storage remains a temporary compatibility measure rather than an ideal SQLite production backend. If deploying a single ECS/Fargate task with EFS, keep the service at a desired count of one and use an ECS rolling deployment with `minimumHealthyPercent: 0` and `maximumPercent: 100`. This intentionally permits a short outage so ECS stops the previous task before starting the replacement; no two tasks may mount and access the same SQLite database. Do not use this configuration with a blue/green deployment controller. Take a verified Admin backup before each deployment and retain it outside EFS.
+
 When placing the container behind a reverse proxy, configure its request-body limit above the application’s 8 MiB file limit. For NGINX, `client_max_body_size 9m;` accommodates the encrypted envelope and AES-GCM overhead. If the proxy rejects an upload with HTTP 413, the browser reports the proxy limit clearly instead of attempting to parse its HTML error page.
 
 - Room URLs contain 256 bits of cryptographically random entropy.
