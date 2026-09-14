@@ -359,11 +359,11 @@
     modeButton.disabled = !master;
     const modeDescription = master ? 'Click the room mode button to switch between Chat Mode and Read-Only Mode.' : 'Chat Mode lets members post. Read-Only Mode prevents non-Master members from posting.';
     const historyDescription = room.history_mode === 'all' ? 'Full history: members can see messages sent before they joined.' : 'From joining: members can see messages sent after they joined.';
-    modeInfo.title = modeDescription;
     modeInfo.dataset.tooltip = modeDescription;
+    modeInfo.setAttribute('aria-label', modeDescription);
     history.querySelector('.history-label').textContent = room.history_mode === 'all' ? 'History: Full' : 'History: From joining';
-    historyInfo.title = historyDescription;
     historyInfo.dataset.tooltip = historyDescription;
+    historyInfo.setAttribute('aria-label', historyDescription);
     const field = messageField;
     const send = document.querySelector('#message-form button[type="submit"]');
     const file = document.querySelector('#file-input');
