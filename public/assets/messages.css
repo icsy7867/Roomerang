@@ -343,3 +343,7 @@ button.room-info-chip:not(:disabled) { cursor: pointer; }
   html.chat-active #chat { max-height: 100svh; overflow: hidden; }
   html.chat-active #messages { touch-action: pan-y; }
 }
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .composer { margin-bottom: 12px; }
+}
