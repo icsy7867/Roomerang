@@ -345,5 +345,19 @@ button.room-info-chip:not(:disabled) { cursor: pointer; }
 }
 
 @media (pointer: coarse) and (orientation: landscape) {
-  .composer { margin-bottom: 32px; }
+  .composer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 40vw);
+    grid-template-areas: 'message actions' 'count actions';
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    row-gap: 3px;
+    margin-bottom: 12px;
+    padding: 8px max(12px, calc((100vw - 920px) / 2)) 10px;
+  }
+  .composer textarea { grid-area: message; min-height: 64px; max-height: 84px; }
+  #char-count { grid-area: count; align-self: start; padding-left: 2px; font-size: .72rem; line-height: 1.3; }
+  #composer-actions { grid-area: actions; display: flex; align-self: stretch; align-items: center; gap: 8px; min-width: 0; }
+  #file-control { grid-area: auto; flex: 1 1 0; min-width: 0; font-size: .75rem; }
+  #send-message { grid-area: auto; flex: 0 0 112px; min-height: 48px; }
 }
