@@ -17,6 +17,7 @@
   let moreHistory = false;
   let loadingHistory = false;
   let pollTimer;
+  let countdownTimer;
   const messageField = document.querySelector('#message-body');
   const composer = document.querySelector('#message-form');
   const markdownEditor = new EasyMDE({
@@ -89,6 +90,21 @@
     const a = ['Amber', 'Brisk', 'Copper', 'Daring', 'Ember', 'Frost', 'Golden', 'Harbor', 'Indigo', 'Jolly', 'Kindred', 'Lunar'];
     const b = ['Badger', 'Comet', 'Falcon', 'Fox', 'Heron', 'Lynx', 'Maple', 'Otter', 'Panda', 'Raven', 'Sparrow', 'Wolf'];
     return `${a[Math.floor(Math.random() * a.length)]} ${b[Math.floor(Math.random() * b.length)]}`;
+  };
+  const formatCountdown = expiresAt => {
+    const remaining = expiresAt - Math.floor(Date.now() / 1000);
+    if (remaining <= 0) return 'Expired';
+    let minutes = Math.ceil(remaining / 60);
+    const units = [['mo', 30 * 24 * 60], ['w', 7 * 24 * 60], ['d', 24 * 60], ['h', 60], ['m', 1]];
+    const parts = [];
+    for (const [label, size] of units) {
+      if (minutes < size) continue;
+      const count = Math.floor(minutes / size);
+      minutes %= size;
+      parts.push(`${count}${label}`);
+      if (parts.length === 2) break;
+    }
+    return parts.join(' ');
   };
   const escape = value => value.replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const formatTimestamp = timestamp => {
@@ -324,7 +340,13 @@
   const updateMeta = (room, member = currentMember) => {
     currentRoom = room;
     const date = new Date(room.expires_at * 1000);
-    document.querySelector('#room-meta').textContent = `Expires ${date.toLocaleString()} · ${room.history_mode === 'all' ? 'full history' : 'from joining'}${room.read_only ? ' · read-only' : ''}`;
+    const countdown = formatCountdown(room.expires_at);
+    const countdownView = document.querySelector('#room-countdown');
+    document.querySelector('#room-meta').textContent = `${room.history_mode === 'all' ? 'full history' : 'from joining'}${room.read_only ? ' · read-only' : ''}`;
+    countdownView.textContent = `${countdown} left`;
+    countdownView.title = `Expires ${date.toLocaleString()}`;
+    countdownView.setAttribute('aria-label', `Room expires in ${countdown}`);
+    if (!countdownTimer) countdownTimer = setInterval(() => updateMeta(currentRoom), 15000);
     const controls = document.querySelector('#master-controls');
     const modeButton = document.querySelector('#readonly-toggle');
     const master = Boolean(member?.is_master);

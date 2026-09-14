@@ -31,7 +31,22 @@
 
 .chat-header,
 .composer {
+  position: relative;
   flex: 0 0 auto;
+}
+
+#room-countdown {
+  position: absolute;
+  right: 18px;
+  bottom: 10px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: #101929;
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .message-body pre {
@@ -240,7 +255,7 @@ fieldset input[type="radio"] {
   .composer {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: 'message message message' 'count file send';
+    grid-template-areas: 'message message message' 'count file send' 'countdown countdown countdown';
     gap: 8px;
     padding: 10px 12px max(5px, env(safe-area-inset-bottom));
   }
@@ -249,6 +264,11 @@ fieldset input[type="radio"] {
   #char-count { grid-area: count; align-self: end; white-space: nowrap; }
   #file-control { grid-area: file; min-width: 0; font-size: .78rem; }
   #send-message { grid-area: send; align-self: end; }
+  #room-countdown {
+    position: static;
+    grid-area: countdown;
+    justify-self: end;
+  }
   #file-input { min-width: 0; max-width: 100%; font-size: .78rem; }
 }
 
