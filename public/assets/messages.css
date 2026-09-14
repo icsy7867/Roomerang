@@ -347,7 +347,7 @@ button.room-info-chip:not(:disabled) { cursor: pointer; }
 @media (pointer: coarse) and (orientation: landscape) {
   .composer {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 40vw);
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 34vw);
     grid-template-areas: 'message actions' 'count actions';
     grid-template-rows: auto auto;
     column-gap: 12px;
@@ -356,8 +356,9 @@ button.room-info-chip:not(:disabled) { cursor: pointer; }
     padding: 8px max(12px, calc((100vw - 920px) / 2)) 10px;
   }
   .composer textarea { grid-area: message; min-height: 64px; max-height: 84px; }
+  .composer .EasyMDEContainer .CodeMirror { height: 64px !important; min-height: 64px; }
   #char-count { grid-area: count; align-self: start; padding-left: 2px; font-size: .72rem; line-height: 1.3; }
-  #composer-actions { grid-area: actions; display: flex; align-self: stretch; align-items: center; gap: 8px; min-width: 0; }
-  #file-control { grid-area: auto; flex: 1 1 0; min-width: 0; font-size: .75rem; }
-  #send-message { grid-area: auto; flex: 0 0 112px; min-height: 48px; }
+  #composer-actions { grid-area: actions; display: flex; flex-direction: column; align-self: stretch; align-items: stretch; justify-content: center; gap: 6px; min-width: 0; }
+  #file-control { grid-area: auto; flex: 0 0 auto; width: 100%; min-width: 0; font-size: .75rem; }
+  #send-message { grid-area: auto; flex: 0 0 auto; align-self: end; width: 96px; min-height: 42px; padding: 7px 12px; font-size: .85rem; }
 }
