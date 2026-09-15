@@ -536,17 +536,27 @@
   });
   const shareDialog = document.querySelector('#share-dialog');
   const shareUrl = document.querySelector('#share-url');
+  const shareDialogBoomerang = document.querySelector('#share-dialog-boomerang');
+  let shareThrowUsed = false;
   const openShareDialog = (url, title, description) => {
     document.querySelector('#share-title').textContent = title;
     document.querySelector('#share-description').textContent = description;
     shareUrl.value = url;
+    shareThrowUsed = false;
+    shareDialogBoomerang.classList.remove('is-thrown');
     shareDialog.showModal();
     requestAnimationFrame(() => shareUrl.select());
   };
   document.querySelector('#copy-link').addEventListener('click', () => {
     openShareDialog(location.href, 'Throw this room', 'Anyone with this complete link can join this room.');
   });
-  document.querySelector('#share-copy').addEventListener('click', event => copy(shareUrl.value, event.currentTarget));
+  document.querySelector('#share-copy').addEventListener('click', event => {
+    if (!shareThrowUsed) {
+      shareThrowUsed = true;
+      shareDialogBoomerang.classList.add('is-thrown');
+    }
+    copy(shareUrl.value, event.currentTarget);
+  });
   const menuToggle = document.querySelector('#chat-menu-toggle');
   const menuActions = document.querySelector('#chat-actions');
   const closeMenu = () => { menuToggle.setAttribute('aria-expanded', 'false'); menuActions.classList.remove('is-open'); };
