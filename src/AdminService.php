@@ -112,6 +112,7 @@ final class AdminService
             'average_messages' => round((float)$messageResult['average_messages'], 2),
             'maintenance_mode' => SystemState::maintenanceEnabled($this->db()),
             'integrity' => (string)$this->db()->query('PRAGMA integrity_check')->fetchColumn(),
+            'journal_mode' => strtoupper((string)$this->db()->query('PRAGMA journal_mode')->fetchColumn()),
         ];
     }
 

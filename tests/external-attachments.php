@@ -9,6 +9,17 @@ function check(bool $condition, string $label): void
     echo "PASS {$label}\n";
 }
 
+function blobCount(string $directory): int
+{
+    if (!is_dir($directory)) return 0;
+    $count = 0;
+    $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS));
+    foreach ($iterator as $entry) {
+        if ($entry->isFile() && str_ends_with($entry->getFilename(), '.blob')) $count++;
+    }
+    return $count;
+}
+
 $root = sys_get_temp_dir() . '/roomerang-external-' . bin2hex(random_bytes(8));
 mkdir($root, 0700, true);
 putenv('PASTE_CHAT_DB=' . $root . '/database.sqlite');
@@ -36,6 +47,21 @@ try {
     check((int)$db->query('SELECT length(ciphertext) FROM encrypted_messages WHERE id=' . (int)$message['id'])->fetchColumn() === 0, 'attachment ciphertext is absent from SQLite');
     check(is_file(App\EncryptedAttachmentStore::path($file['storage_key'])), 'attachment ciphertext is promoted to opaque file storage');
     check(substr_count(App\EncryptedAttachmentStore::relativePath($file['storage_key']), '/') === 1, 'new attachments use one EFS shard directory');
+
+    $duplicatePath = App\EncryptedAttachmentStore::directory() . '/.duplicate.upload';
+    $duplicateWire = substr($wire, 0, 12) . random_bytes(4096);
+    file_put_contents($duplicatePath, $duplicateWire);
+    try {
+        $service->postAttachment($room, $member, [
+            'path' => $duplicatePath,
+            'bytes' => strlen($duplicateWire),
+            'sha256' => hash('sha256', $duplicateWire),
+            'nonce' => substr($duplicateWire, 0, 12),
+        ]);
+        throw new LogicException('duplicate nonce accepted');
+    } catch (PDOException) {
+        check(!is_file($duplicatePath) && blobCount(App\EncryptedAttachmentStore::directory()) === 1, 'failed metadata commit removes the promoted attachment');
+    }
 
     $source = $service->contentSource($room, $member, $message['id']);
     check(!isset($source['bytes']) && $source['wire_bytes'] === strlen($wire), 'member content uses attachment source metadata');

@@ -33,6 +33,7 @@ Set these when starting the container or under `environment:` in Compose:
 | --- | --- | --- |
 | `PASTE_CHAT_DB` | `/app/data/database.sql` | SQLite database path. Its parent directory must be writable by UID/GID 1000. |
 | `PASTE_CHAT_MAX_MESSAGE_LENGTH` | `12000` | Maximum character count for a text message. |
+| `SQLITE_JOURNAL_MODE` | `DELETE` | SQLite journal mode: use `DELETE` for EFS/NFS, or explicitly set `WAL` for local filesystems. |
 | `MAXIMUM_DURATION` | `1mo` | Longest duration offered and accepted for new rooms: `10m`, `30m`, `1h`, `12h`, `1d`, `1w`, `1m`, or `1mo`. |
 | `DEFAULT_DURATION` | `1h` | Initially selected duration on the landing page. It accepts the same values as `MAXIMUM_DURATION` and must not exceed that maximum. Invalid or disallowed values fall back to one hour when available, otherwise the longest allowed duration. |
 | `ADMIN_PASSWORD` | unset | Enables the password-protected `/admin` operator console. Use a long random value and set it only through deployment secrets. |
@@ -95,7 +96,9 @@ Mounted data directories and existing database files (including SQLite WAL/SHM f
 
 ### SQLite on network storage
 
-Roomerang uses SQLite rollback journaling (`journal_mode=DELETE`) instead of WAL. This avoids WAL's shared-memory sidecar, which is incompatible with network filesystems such as NFS/EFS. Rollback journaling reduces concurrent read/write capacity, so the application waits up to ten seconds for a short-lived database lock and uses `synchronous=NORMAL` to reduce network-storage sync latency. This accepts a small risk to the most recent transaction during an infrastructure crash; retain verified backups outside EFS.
+Roomerang defaults to SQLite rollback journaling (`SQLITE_JOURNAL_MODE=DELETE`). This avoids WAL's shared-memory sidecar, which is incompatible with network filesystems such as NFS/EFS. Rollback journaling reduces concurrent read/write capacity, so the application waits up to ten seconds for a short-lived database lock and uses `synchronous=NORMAL` to reduce network-storage sync latency. This accepts a small risk to the most recent transaction during an infrastructure crash; retain verified backups outside EFS.
+
+For a deployment whose `/app/data` directory is on a real local filesystem, set `SQLITE_JOURNAL_MODE=WAL` to restore WAL's higher read/write concurrency. Never enable WAL when the database or its sidecars reside on EFS, NFS, or another network filesystem. Roomerang checks the persistent journal mode on each connection but performs a mode transition only when the configured value differs, so normal polling does not repeatedly renegotiate it.
 
 Network storage remains a temporary compatibility measure rather than an ideal SQLite production backend. If deploying a single ECS/Fargate task with EFS, keep the service at a desired count of one and use an ECS rolling deployment with `minimumHealthyPercent: 0` and `maximumPercent: 100`. This intentionally permits a short outage so ECS stops the previous task before starting the replacement; no two tasks may mount and access the same SQLite database. Do not use this configuration with a blue/green deployment controller. Take a verified Admin backup before each deployment and retain it outside EFS.
 

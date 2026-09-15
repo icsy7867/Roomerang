@@ -6,6 +6,8 @@ use PDO;
 
 final class Database
 {
+    private const JOURNAL_MODES = ['DELETE', 'WAL'];
+
     public static function integrityFailure(): ?string
     {
         $status = self::path() . '.integrity-failed';
@@ -29,6 +31,15 @@ final class Database
         return getenv('PASTE_CHAT_DB') ?: '/app/data/database.sql';
     }
 
+    public static function journalMode(): string
+    {
+        $mode = strtoupper(trim((string)(getenv('SQLITE_JOURNAL_MODE') ?: 'DELETE')));
+        if (!in_array($mode, self::JOURNAL_MODES, true)) {
+            throw new \RuntimeException('SQLITE_JOURNAL_MODE must be DELETE or WAL.');
+        }
+        return $mode;
+    }
+
     public static function connection(): PDO
     {
         $path = self::path();
@@ -40,14 +51,16 @@ final class Database
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
-        // WAL relies on a shared-memory sidecar and is unsuitable for the NFS
-        // volumes commonly used by container platforms. Rollback journaling is
-        // less concurrent, but avoids the WAL shared-memory coordination.
-        $journalMode = strtolower((string)$db->query('PRAGMA journal_mode = DELETE')->fetchColumn());
-        if ($journalMode !== 'delete') {
-            throw new \RuntimeException('Could not enable SQLite rollback journaling.');
+        $db->exec('PRAGMA busy_timeout = 10000;');
+        $desiredMode = self::journalMode();
+        $journalMode = strtoupper((string)$db->query('PRAGMA journal_mode')->fetchColumn());
+        if ($journalMode !== $desiredMode) {
+            $journalMode = strtoupper((string)$db->query('PRAGMA journal_mode = ' . $desiredMode)->fetchColumn());
         }
-        $db->exec('PRAGMA busy_timeout = 10000; PRAGMA foreign_keys = ON; PRAGMA synchronous = NORMAL;');
+        if ($journalMode !== $desiredMode) {
+            throw new \RuntimeException('Could not enable SQLite ' . $desiredMode . ' journaling.');
+        }
+        $db->exec('PRAGMA foreign_keys = ON; PRAGMA synchronous = NORMAL;');
         return $db;
     }
 

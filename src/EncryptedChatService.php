@@ -122,15 +122,15 @@ final class EncryptedChatService
         $key = EncryptedAttachmentStore::newKey();
         $now = time();
         $promoted = false;
-        $this->db->beginTransaction();
         try {
+            EncryptedAttachmentStore::promote($staged['path'], $key);
+            $promoted = true;
+            $this->db->beginTransaction();
             $message = $this->db->prepare('INSERT INTO encrypted_messages(room_id,session_hash,nonce,ciphertext,created_at) VALUES (?,?,?,zeroblob(0),?)');
             $message->execute([$room['id'], $member['session_hash'], $staged['nonce'], $now]);
             $messageId = (int)$this->db->lastInsertId();
             $file = $this->db->prepare('INSERT INTO encrypted_message_files(message_id,storage_key,wire_bytes,wire_sha256,created_at) VALUES (?,?,?,?,?)');
             $file->execute([$messageId, $key, $staged['bytes'], $staged['sha256'], $now]);
-            EncryptedAttachmentStore::promote($staged['path'], $key);
-            $promoted = true;
             $this->db->commit();
             return ['id'=>$messageId,'created_at'=>$now,'display_name'=>$member['display_name'],'is_mine'=>true];
         } catch (\Throwable $error) {

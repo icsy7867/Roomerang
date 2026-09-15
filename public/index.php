@@ -91,7 +91,7 @@ if (str_starts_with($path, '/admin')) {
         <?php
         exit;
     }
-    $stats = $integrityFailure === null ? $admin->statistics() : ['total_chats'=>0,'active_chats'=>0,'expired_chats'=>0,'empty_chats'=>0,'maximum_messages'=>0,'average_messages'=>0,'maintenance_mode'=>true,'integrity'=>$integrityFailure];
+    $stats = $integrityFailure === null ? $admin->statistics() : ['total_chats'=>0,'active_chats'=>0,'expired_chats'=>0,'empty_chats'=>0,'maximum_messages'=>0,'average_messages'=>0,'maintenance_mode'=>true,'integrity'=>$integrityFailure,'journal_mode'=>'Unavailable'];
     $notice = (string)($_GET['notice'] ?? '');
     if ($notice === 'maintenance') $notice = 'Maintenance mode updated.';
     elseif (preg_match('/^pruned-([0-9]+)$/', $notice, $match)) $notice = $match[1] . ' expired chat(s) removed.';
@@ -133,7 +133,7 @@ if (str_starts_with($path, '/admin')) {
     </section>
     <section class="admin-card">
       <h3>Database care</h3>
-      <p>Integrity check: <strong><?= $escape($stats['integrity']) ?></strong>. Expired rooms are automatically inaccessible and cascaded data is deleted when pruned.</p>
+      <p>Integrity check: <strong><?= $escape($stats['integrity']) ?></strong>. Journal mode: <strong><?= $escape($stats['journal_mode']) ?></strong>. Expired rooms are automatically inaccessible and cascaded data is deleted when pruned.</p>
       <div class="admin-actions">
         <form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="prune"><button class="quiet" type="submit">Prune expired chats</button></form>
         <form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="backup"><button class="primary" type="submit"<?= $stats['maintenance_mode'] ? '' : ' disabled' ?>>Download backup archive</button></form>
@@ -246,8 +246,13 @@ if (str_starts_with($path, '/api/')) {
             if (($_SERVER['CONTENT_TYPE'] ?? '') !== 'application/octet-stream') Http::json(['error'=>'Encrypted binary payload required.'],415);
             if (($_SERVER['HTTP_X_ROOMERANG_STORAGE'] ?? '') === 'attachment') {
                 $service->requireCanPost($room, $member);
+                $stageStarted = hrtime(true);
                 $staged = EncryptedAttachmentStore::stageInput();
-                Http::json(['message'=>$service->postAttachment($room,$member,$staged)],201);
+                header('Server-Timing: attachment-stage;dur=' . number_format((hrtime(true) - $stageStarted) / 1e6, 1, '.', ''));
+                $finalizeStarted = hrtime(true);
+                $message = $service->postAttachment($room,$member,$staged);
+                header('Server-Timing: attachment-finalize;dur=' . number_format((hrtime(true) - $finalizeStarted) / 1e6, 1, '.', ''), false);
+                Http::json(['message'=>$message],201);
             }
             $bytes=file_get_contents('php://input',false,null,0,EncryptedChatService::MAX_CIPHERTEXT+13);
             Http::json(['message'=>$service->post($room,$member,substr($bytes,0,12),substr($bytes,12))],201);
