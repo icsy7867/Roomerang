@@ -160,7 +160,7 @@ if ($method === 'GET' && preg_match('#^/media/([A-Za-z0-9_-]{43})$#', $path, $im
 if (str_starts_with($path, '/api/')) {
     if ($integrityFailure !== null) Http::json(['error' => 'Roomerang is undergoing database maintenance. Please try again later.'], 503);
     try {
-        $service = new EncryptedChatService(Database::connection());
+        $service = new EncryptedChatService(App\ServerTiming::measure('db-connect', fn () => Database::connection()));
         if ($method === 'POST' && $path === '/api/chats') {
             $data = Http::input();
             $room = $service->create((string)($data['duration'] ?? ''), (string)($data['history_mode'] ?? ''));
@@ -206,7 +206,7 @@ if (str_starts_with($path, '/api/')) {
             Http::json(['error'=>'Not found.'],404);
         }
         if (!preg_match('#^/api/chats/([A-Za-z0-9_-]{43})(?:/(join|messages)(?:/([0-9]+))?)?$#', $path, $matches)) Http::json(['error' => 'Not found.'], 404);
-        $room = $service->room($matches[1]);
+        $room = App\ServerTiming::measure('room-lookup', fn () => $service->room($matches[1]));
         $action = $matches[2] ?? '';
         $session = Http::sessionId();
         if ($method === 'POST' && $action === 'join') {
@@ -215,14 +215,14 @@ if (str_starts_with($path, '/api/')) {
             $room=$service->room($matches[1]);
             Http::json(['room' => $service->roomView($room), 'member' => $service->memberView($room,$member), 'messages' => $service->messages($room, $member, 0, PHP_INT_MAX)]);
         }
-        $member = $service->member($room, $session);
+        $member = App\ServerTiming::measure('member-lookup', fn () => $service->member($room, $session));
         if (!$member) Http::json(['error' => 'Join this chat before viewing messages.', 'join_required' => true], 403);
         if (isset($matches[3])) {
             if ($method === 'POST' && $action === 'messages') {
                 Http::json(['share'=>$service->share($room,$member,(int)$matches[3])],201);
             }
             if ($method !== 'GET' || $action !== 'messages') Http::json(['error'=>'Not found.'],404);
-            $source=$service->contentSource($room,$member,(int)$matches[3]);
+            $source=App\ServerTiming::measure('content-lookup', fn () => $service->contentSource($room,$member,(int)$matches[3]));
             header('Content-Type: application/octet-stream');
             header('Cache-Control: no-store');
             if (isset($source['bytes'])) {
@@ -234,7 +234,7 @@ if (str_starts_with($path, '/api/')) {
             }
             exit;
         }
-        $member = $service->touch($room,$member);
+        $member = App\ServerTiming::measure('presence', fn () => $service->touch($room,$member));
         if ($action === 'messages' && $method === 'GET') {
             Http::json([
                 'member' => $service->memberView($room,$member),
@@ -245,10 +245,10 @@ if (str_starts_with($path, '/api/')) {
         if ($action === 'messages' && $method === 'POST') {
             if (($_SERVER['CONTENT_TYPE'] ?? '') !== 'application/octet-stream') Http::json(['error'=>'Encrypted binary payload required.'],415);
             if (($_SERVER['HTTP_X_ROOMERANG_STORAGE'] ?? '') === 'attachment') {
-                $service->requireCanPost($room, $member);
+                App\ServerTiming::measure('post-authorize', fn () => $service->requireCanPost($room, $member));
                 $stageStarted = hrtime(true);
                 $staged = EncryptedAttachmentStore::stageInput();
-                header('Server-Timing: attachment-stage;dur=' . number_format((hrtime(true) - $stageStarted) / 1e6, 1, '.', ''));
+                App\ServerTiming::report('attachment-stage', (hrtime(true) - $stageStarted) / 1e6);
                 $finalizeStarted = hrtime(true);
                 $message = $service->postAttachment($room,$member,$staged);
                 header('Server-Timing: attachment-finalize;dur=' . number_format((hrtime(true) - $finalizeStarted) / 1e6, 1, '.', ''), false);

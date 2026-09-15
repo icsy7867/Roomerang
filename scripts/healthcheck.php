@@ -9,8 +9,9 @@ if (App\Database::integrityFailure() !== null) {
 }
 
 try {
-    $check = App\Database::connection()->query('PRAGMA integrity_check')->fetchColumn();
-    exit($check === 'ok' ? 0 : 1);
+    // Exercise a real application table without scanning every stored message.
+    App\Database::connection()->query('SELECT id FROM encrypted_messages LIMIT 1')->fetchColumn();
+    exit(0);
 } catch (Throwable) {
     exit(1);
 }

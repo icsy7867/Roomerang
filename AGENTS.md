@@ -19,7 +19,7 @@ database/schema.sql        Idempotent SQLite schema template
 images/roomerang.svg       Source vector logo; Dockerfile copies it into the public asset directory
 images/roomerang.png       Raster source logo retained for design/export use
 scripts/init.php           Startup schema application and integrity check
-scripts/healthcheck.php    SQLite PRAGMA integrity_check health command
+scripts/healthcheck.php    Lightweight application-table read health command
 src/bootstrap.php          App autoloader and shared bootstrap
 src/Database.php           PDO SQLite connection configuration
 src/Http.php               JSON responses, input parsing, session cookie handling

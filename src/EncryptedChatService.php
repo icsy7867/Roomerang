@@ -42,10 +42,11 @@ final class EncryptedChatService
     public function touch(array $room, array $member): array
     {
         $this->assertMember($member);
-        if (SystemState::maintenanceEnabled($this->db)) return $member;
         $now=time();
-        $q=$this->db->prepare('UPDATE encrypted_members SET last_seen_at=? WHERE room_id=? AND session_hash=? AND blocked=0');
-        $q->execute([$now,$room['id'],$member['session_hash']]);
+        if ((int)($member['last_seen_at'] ?? 0) > $now - 30) return $member;
+        if (SystemState::maintenanceEnabled($this->db)) return $member;
+        $q=$this->db->prepare('UPDATE encrypted_members SET last_seen_at=? WHERE room_id=? AND session_hash=? AND blocked=0 AND last_seen_at<=?');
+        $q->execute([$now,$room['id'],$member['session_hash'],$now-30]);
         $member['last_seen_at']=$now;
         return $member;
     }
@@ -123,15 +124,17 @@ final class EncryptedChatService
         $now = time();
         $promoted = false;
         try {
-            EncryptedAttachmentStore::promote($staged['path'], $key);
+            ServerTiming::measure('attachment-promote', fn () => EncryptedAttachmentStore::promote($staged['path'], $key));
             $promoted = true;
+            $databaseStarted = hrtime(true);
             $this->db->beginTransaction();
             $message = $this->db->prepare('INSERT INTO encrypted_messages(room_id,session_hash,nonce,ciphertext,created_at) VALUES (?,?,?,zeroblob(0),?)');
             $message->execute([$room['id'], $member['session_hash'], $staged['nonce'], $now]);
             $messageId = (int)$this->db->lastInsertId();
             $file = $this->db->prepare('INSERT INTO encrypted_message_files(message_id,storage_key,wire_bytes,wire_sha256,created_at) VALUES (?,?,?,?,?)');
             $file->execute([$messageId, $key, $staged['bytes'], $staged['sha256'], $now]);
-            $this->db->commit();
+            ServerTiming::report('attachment-db-write', (hrtime(true) - $databaseStarted) / 1e6);
+            ServerTiming::measure('attachment-db-commit', fn () => $this->db->commit());
             return ['id'=>$messageId,'created_at'=>$now,'display_name'=>$member['display_name'],'is_mine'=>true];
         } catch (\Throwable $error) {
             if ($this->db->inTransaction()) $this->db->rollBack();

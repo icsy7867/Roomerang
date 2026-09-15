@@ -96,6 +96,10 @@ Mounted data directories and existing database files (including SQLite WAL/SHM f
 
 ### SQLite on network storage
 
+Chat presence timestamps are refreshed at most once every 30 seconds per member during normal polling. The recurring health check reads one application-table row; full integrity scans remain at startup and in Admin Database Care.
+
+Attachment POST responses expose `Server-Timing` durations in milliseconds for `db-connect`, `room-lookup`, `member-lookup`, `presence`, `post-authorize`, `attachment-read`, `attachment-write`, `attachment-close`, `attachment-promote`, `attachment-db-write`, and `attachment-db-commit`. `attachment-stage` and `attachment-finalize` are aggregate durations; do not add them to their component timings. PHP input reads can include waiting for incoming bytes; proxy buffering and browser encryption occur outside these measurements. Inspect the POST response headers alongside the browser's total request timing. Message downloads expose database and content-lookup timings before the file stream begins. Timings contain no keys, room identifiers, or payloads.
+
 Roomerang defaults to SQLite rollback journaling (`SQLITE_JOURNAL_MODE=DELETE`). This avoids WAL's shared-memory sidecar, which is incompatible with network filesystems such as NFS/EFS. Rollback journaling reduces concurrent read/write capacity, so the application waits up to ten seconds for a short-lived database lock and uses `synchronous=NORMAL` to reduce network-storage sync latency. This accepts a small risk to the most recent transaction during an infrastructure crash; retain verified backups outside EFS.
 
 For a deployment whose `/app/data` directory is on a real local filesystem, set `SQLITE_JOURNAL_MODE=WAL` to restore WAL's higher read/write concurrency. Never enable WAL when the database or its sidecars reside on EFS, NFS, or another network filesystem. Roomerang checks the persistent journal mode on each connection but performs a mode transition only when the configured value differs, so normal polling does not repeatedly renegotiate it.

@@ -38,25 +38,33 @@ final class EncryptedAttachmentStore
         $bytes = 0;
         $hash = hash_init('sha256');
         $nonce = '';
+        $readTime = 0;
+        $writeTime = 0;
         try {
             while (!feof($input)) {
+                $started = hrtime(true);
                 $chunk = fread($input, 65536);
+                $readTime += hrtime(true) - $started;
                 if ($chunk === false) throw new \RuntimeException('Could not read the encrypted attachment.');
                 if ($chunk === '') continue;
                 $bytes += strlen($chunk);
                 if ($bytes > self::MAX_WIRE_BYTES) throw new \InvalidArgumentException('Invalid encrypted payload or file exceeds 8 MB.');
                 if (strlen($nonce) < 12) $nonce .= substr($chunk, 0, 12 - strlen($nonce));
                 hash_update($hash, $chunk);
+                $started = hrtime(true);
                 self::writeAll($output, $chunk);
+                $writeTime += hrtime(true) - $started;
             }
             if ($bytes < 32 || strlen($nonce) !== 12) throw new \InvalidArgumentException('Invalid encrypted payload.');
             if ($expectedBytes !== null && $bytes !== $expectedBytes) {
                 throw new \InvalidArgumentException('The encrypted upload was incomplete. Please retry.');
             }
+            $started = hrtime(true);
             if (!fflush($output)) {
                 throw new \RuntimeException('Could not save the encrypted attachment.');
             }
             fclose($output);
+            ServerTiming::report('attachment-close', (hrtime(true) - $started) / 1e6);
             fclose($input);
             @chmod($path, 0600);
             return ['path' => $path, 'bytes' => $bytes, 'sha256' => hash_final($hash), 'nonce' => $nonce];
@@ -65,6 +73,9 @@ final class EncryptedAttachmentStore
             fclose($input);
             @unlink($path);
             throw $error;
+        } finally {
+            ServerTiming::report('attachment-read', $readTime / 1e6);
+            ServerTiming::report('attachment-write', $writeTime / 1e6);
         }
     }
 
