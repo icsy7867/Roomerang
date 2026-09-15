@@ -538,12 +538,78 @@
   const shareUrl = document.querySelector('#share-url');
   const shareDialogBoomerang = document.querySelector('#share-dialog-boomerang');
   let shareThrowUsed = false;
+  let activeShareFlight;
+  let flyingShareBoomerang;
+  const resetShareThrow = () => {
+    activeShareFlight?.cancel();
+    flyingShareBoomerang?.remove();
+    activeShareFlight = undefined;
+    flyingShareBoomerang = undefined;
+    shareThrowUsed = false;
+    shareDialog.classList.remove('is-throwing');
+    shareDialogBoomerang.classList.remove('is-thrown');
+  };
+  const throwShareBoomerang = () => {
+    if (shareThrowUsed) return;
+    shareThrowUsed = true;
+    const rect = shareDialogBoomerang.getBoundingClientRect();
+    shareDialogBoomerang.classList.add('is-thrown');
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const flight = shareDialogBoomerang.cloneNode();
+    flight.removeAttribute('id');
+    flight.className = 'share-dialog-boomerang-flight';
+    flight.setAttribute('aria-hidden', 'true');
+    flight.style.width = `${rect.width}px`;
+    flight.style.height = `${rect.height}px`;
+    shareDialog.classList.add('is-throwing');
+    shareDialog.append(flight);
+    if (typeof flight.animate !== 'function') { shareDialog.classList.remove('is-throwing'); flight.remove(); return; }
+    flyingShareBoomerang = flight;
+
+    const start = {x:rect.left + rect.width / 2, y:rect.top + rect.height / 2};
+    const end = {x:innerWidth + rect.width * 2.2, y:Math.min(innerHeight - rect.height * 2, start.y + 12)};
+    const travel = end.x - start.x;
+    const arcHeight = Math.min(110, Math.max(35, travel * .1), Math.max(0, start.y - rect.height * 1.4));
+    const controls = [
+      {x:start.x + travel * .32, y:start.y - arcHeight},
+      {x:start.x + travel * .73, y:start.y - arcHeight},
+    ];
+    const curvePoint = t => {
+      const inverse = 1 - t;
+      return {
+        x:inverse ** 3 * start.x + 3 * inverse ** 2 * t * controls[0].x + 3 * inverse * t ** 2 * controls[1].x + t ** 3 * end.x,
+        y:inverse ** 3 * start.y + 3 * inverse ** 2 * t * controls[0].y + 3 * inverse * t ** 2 * controls[1].y + t ** 3 * end.y,
+      };
+    };
+    const points = Array.from({length:49}, (_, index) => curvePoint(index / 48));
+    const distances = [0];
+    for (let index = 1; index < points.length; index += 1) {
+      distances[index] = distances[index - 1] + Math.hypot(points[index].x - points[index - 1].x, points[index].y - points[index - 1].y);
+    }
+    const distance = distances[distances.length - 1];
+    const keyframes = points.map((point, index) => {
+      const progress = distances[index] / distance;
+      return {
+        offset:progress,
+        opacity:progress < .88 ? 1 : Math.max(0, (1 - progress) / .12),
+        transform:`translate3d(${point.x - rect.width / 2}px, ${point.y - rect.height / 2}px, 0) rotate(${-90 - progress * 1080}deg) scale(${1 + progress * 1.2})`,
+      };
+    });
+    const animation = flight.animate(keyframes, {duration:distance / .7, easing:'linear', fill:'forwards'});
+    activeShareFlight = animation;
+    animation.addEventListener('finish', () => {
+      flight.remove();
+      shareDialog.classList.remove('is-throwing');
+      if (activeShareFlight === animation) activeShareFlight = undefined;
+      if (flyingShareBoomerang === flight) flyingShareBoomerang = undefined;
+    }, {once:true});
+  };
   const openShareDialog = (url, title, description) => {
     document.querySelector('#share-title').textContent = title;
     document.querySelector('#share-description').textContent = description;
     shareUrl.value = url;
-    shareThrowUsed = false;
-    shareDialogBoomerang.classList.remove('is-thrown');
+    resetShareThrow();
     shareDialog.showModal();
     requestAnimationFrame(() => shareUrl.select());
   };
@@ -551,10 +617,7 @@
     openShareDialog(location.href, 'Throw this room', 'Anyone with this complete link can join this room.');
   });
   document.querySelector('#share-copy').addEventListener('click', event => {
-    if (!shareThrowUsed) {
-      shareThrowUsed = true;
-      shareDialogBoomerang.classList.add('is-thrown');
-    }
+    throwShareBoomerang();
     copy(shareUrl.value, event.currentTarget);
   });
   const menuToggle = document.querySelector('#chat-menu-toggle');

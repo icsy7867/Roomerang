@@ -297,19 +297,15 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
 @keyframes boomerang-throw { from { transform: rotate(-90deg); } to { transform: rotate(-810deg); } }
 
 #share-dialog { width: min(560px, calc(100vw - 32px)); }
+#share-dialog.is-throwing { overflow: visible; }
 .panel#shared-view { max-width: 70vw; }
 #shared-view .message-body pre { max-height: 75dvh; }
 .share-dialog { display: grid; gap: 14px; }
 .share-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .share-dialog-title { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
 #share-dialog-boomerang { display: block; width: 27px; height: 25px; flex: 0 0 auto; object-fit: contain; transform: rotate(-90deg); transform-origin: center; }
-#share-dialog-boomerang.is-thrown { animation: share-dialog-boomerang-throw .82s cubic-bezier(.22,.8,.3,1) forwards; }
-@keyframes share-dialog-boomerang-throw {
-  0% { opacity: 1; transform: translate(0, 0) rotate(-90deg) scale(1); }
-  28% { opacity: 1; transform: translate(28px, -13px) rotate(-310deg) scale(1.12); }
-  68% { opacity: .9; transform: translate(120px, -24px) rotate(-710deg) scale(1.55); }
-  100% { opacity: 0; transform: translate(240px, 9px) rotate(-1030deg) scale(2.2); }
-}
+#share-dialog-boomerang.is-thrown { visibility: hidden; }
+.share-dialog-boomerang-flight { position: fixed; z-index: 2; top: 0; left: 0; display: block; object-fit: contain; pointer-events: none; transform-origin: center; will-change: transform, opacity; }
 .share-dialog p { margin: 0; }
 #share-url { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; }
 .room-info { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
@@ -325,10 +321,6 @@ button.room-info-chip:not(:disabled) { cursor: pointer; }
 #history-info::after { left: 0; transform: translateY(3px); }
 #history-info:hover::after, #history-info:focus-visible::after { transform: translateY(0); }
 .info-icon:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-@media (prefers-reduced-motion: reduce) {
-  #share-dialog-boomerang.is-thrown { animation: none; visibility: hidden; }
-}
 
 @media (max-width: 1000px) {
   #chat-menu-toggle { display: block; flex: 0 0 auto; width: 44px; height: 44px; padding: 4px; font-size: 24px; background: transparent; }
