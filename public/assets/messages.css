@@ -306,6 +306,7 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
 #share-dialog-boomerang { display: block; width: 27px; height: 25px; flex: 0 0 auto; object-fit: contain; transform: rotate(-90deg); transform-origin: center; }
 #share-dialog-boomerang.is-thrown { visibility: hidden; }
 .share-dialog-boomerang-flight { position: fixed; z-index: 2; top: 0; left: 0; display: block; object-fit: contain; pointer-events: none; transform-origin: center; will-change: transform, opacity; }
+.returning-boomerang { position: fixed; z-index: 30; top: 0; left: 0; display: block; width: 27px; height: 25px; object-fit: contain; pointer-events: none; transform-origin: center; will-change: transform, opacity; }
 .share-dialog p { margin: 0; }
 #share-url { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; }
 .room-info { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }

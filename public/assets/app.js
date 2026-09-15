@@ -19,6 +19,7 @@
   let loadingHistory = false;
   let pollTimer;
   let countdownTimer;
+  let activeSessionIds;
   const messageField = document.querySelector('#message-body');
   const composer = document.querySelector('#message-form');
   const markdownEditor = new EasyMDE({
@@ -38,7 +39,7 @@
   // are capped at 12,000 characters, so keeping the complete draft in the DOM
   // lets Android's Select all include every line without a material cost.
   markdownEditor.codemirror.setOption('viewportMargin', Infinity);
-  const usesMobileEditorKeys = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  const usesCoarsePointer = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
   const editorValue = () => markdownEditor.value();
   const setEditorValue = value => markdownEditor.value(value);
   const setEditorPlaceholder = value => { messageField.placeholder = value; markdownEditor.codemirror.setOption('placeholder', value); };
@@ -383,6 +384,74 @@
     badge.title = `${member.display_name}${member.is_master ? ' · Master' : ''}`;
     badge.setAttribute('aria-label', `Your username: ${badge.title}`);
   };
+  let activeReturnFlight;
+  let returningBoomerang;
+  const returnBoomerang = () => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || activeReturnFlight) return;
+    const menuToggle = document.querySelector('#chat-menu-toggle');
+    const target = getComputedStyle(menuToggle).display !== 'none' ? menuToggle : document.querySelector('#users-button');
+    const targetRect = target.getBoundingClientRect();
+    if (!targetRect.width || !targetRect.height) return;
+
+    const width = 27;
+    const height = 25;
+    const flight = document.createElement('img');
+    flight.className = 'returning-boomerang';
+    flight.src = '/assets/roomerang.svg?v=1';
+    flight.alt = '';
+    flight.setAttribute('aria-hidden', 'true');
+    document.body.append(flight);
+    if (typeof flight.animate !== 'function') { flight.remove(); return; }
+    returningBoomerang = flight;
+
+    const start = {x:innerWidth - width * 1.7, y:innerHeight - height * 1.7};
+    const end = {x:targetRect.left + targetRect.width / 2, y:targetRect.top + targetRect.height / 2};
+    const rise = Math.max(1, start.y - end.y);
+    const sweep = Math.min(innerWidth * .35, Math.max(72, Math.abs(start.x - end.x) * .35));
+    const controls = [
+      {x:start.x - sweep, y:start.y - rise * .22},
+      {x:end.x + sweep * .55, y:end.y + rise * .22},
+    ];
+    const curvePoint = t => {
+      const inverse = 1 - t;
+      return {
+        x:inverse ** 3 * start.x + 3 * inverse ** 2 * t * controls[0].x + 3 * inverse * t ** 2 * controls[1].x + t ** 3 * end.x,
+        y:inverse ** 3 * start.y + 3 * inverse ** 2 * t * controls[0].y + 3 * inverse * t ** 2 * controls[1].y + t ** 3 * end.y,
+      };
+    };
+    const points = Array.from({length:49}, (_, index) => curvePoint(index / 48));
+    const distances = [0];
+    for (let index = 1; index < points.length; index += 1) {
+      distances[index] = distances[index - 1] + Math.hypot(points[index].x - points[index - 1].x, points[index].y - points[index - 1].y);
+    }
+    const distance = distances[distances.length - 1];
+    const spinDegrees = usesCoarsePointer() ? 1296 : 2592;
+    const keyframes = points.map((point, index) => {
+      const progress = distances[index] / distance;
+      return {
+        offset:progress,
+        opacity:Math.min(1, progress / .08),
+        transform:`translate3d(${point.x - width / 2}px, ${point.y - height / 2}px, 0) rotate(${-90 - progress * spinDegrees}deg) scale(${1.8 - progress * .8})`,
+      };
+    });
+    const animation = flight.animate(keyframes, {duration:Math.max(700, Math.min(1450, distance / .826)), easing:'linear', fill:'forwards'});
+    activeReturnFlight = animation;
+    const cleanupFlight = () => {
+      flight.remove();
+      if (returningBoomerang !== flight) return;
+      if (activeReturnFlight === animation) activeReturnFlight = undefined;
+      returningBoomerang = undefined;
+    };
+    animation.addEventListener('finish', cleanupFlight, {once:true});
+    animation.addEventListener('cancel', cleanupFlight, {once:true});
+  };
+  const updateActiveSessions = sessions => {
+    if (!Array.isArray(sessions)) return;
+    const next = new Set(sessions);
+    const memberJoined = activeSessionIds && sessions.some(session => !activeSessionIds.has(session));
+    activeSessionIds = next;
+    if (memberJoined) returnBoomerang();
+  };
   const activate = async data => {
     setChatViewport(true);
     landing.hidden = true; unavailable.hidden = true; chat.hidden = false; updateUser(data.member); updateMeta(data.room, data.member);
@@ -392,6 +461,7 @@
     lastId = data.messages.length ? Number(data.messages.at(-1).id) : 0;
     oldestId = data.messages.length ? Number(data.messages[0].id) : 0;
     moreHistory = data.messages.length === 25;
+    updateActiveSessions(data.active_sessions);
     for (const message of [...data.messages].reverse()) display(message);
     scrollToLatest();
     clearTimeout(pollTimer);
@@ -413,6 +483,7 @@
     try {
       const data = await request(`/api/chats/${token}/messages?after=${lastId}`);
       updateUser(data.member); updateMeta(data.room, data.member);
+      updateActiveSessions(data.active_sessions);
       for (const message of data.messages) display(message);
       if (data.messages.length) lastId = Number(data.messages.at(-1).id);
     }
@@ -485,7 +556,7 @@
     if (editor.getValue().length - removed + inserted > 12000) change.cancel();
   });
   markdownEditor.codemirror.on('keydown', (_, event) => {
-    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && !usesMobileEditorKeys()) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && !usesCoarsePointer()) {
       event.preventDefault();
       composer.requestSubmit(composer.querySelector('button[type="submit"]'));
     }
@@ -588,7 +659,7 @@
       distances[index] = distances[index - 1] + Math.hypot(points[index].x - points[index - 1].x, points[index].y - points[index - 1].y);
     }
     const distance = distances[distances.length - 1];
-    const spinDegrees = matchMedia('(hover: none) and (pointer: coarse)').matches ? 1296 : 2592;
+    const spinDegrees = usesCoarsePointer() ? 1296 : 2592;
     const keyframes = points.map((point, index) => {
       const progress = distances[index] / distance;
       return {

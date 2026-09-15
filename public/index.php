@@ -213,7 +213,12 @@ if (str_starts_with($path, '/api/')) {
             $data = Http::input();
             $member = $service->join($room, $session, (string)($data['name'] ?? ''));
             $room=$service->room($matches[1]);
-            Http::json(['room' => $service->roomView($room), 'member' => $service->memberView($room,$member), 'messages' => $service->messages($room, $member, 0, PHP_INT_MAX)]);
+            Http::json([
+                'room' => $service->roomView($room),
+                'member' => $service->memberView($room,$member),
+                'messages' => $service->messages($room, $member, 0, PHP_INT_MAX),
+                'active_sessions' => array_column($service->activeMembers($room,$member),'session_id'),
+            ]);
         }
         $member = App\ServerTiming::measure('member-lookup', fn () => $service->member($room, $session));
         if (!$member) Http::json(['error' => 'Join this chat before viewing messages.', 'join_required' => true], 403);
@@ -240,6 +245,7 @@ if (str_starts_with($path, '/api/')) {
                 'member' => $service->memberView($room,$member),
                 'room' => $service->roomView($room),
                 'messages' => $service->messages($room, $member, (int)($_GET['after'] ?? 0), isset($_GET['before']) ? max(0, (int)$_GET['before']) : (isset($_GET['after']) ? null : PHP_INT_MAX)),
+                'active_sessions' => array_column($service->activeMembers($room,$member),'session_id'),
             ]);
         }
         if ($action === 'messages' && $method === 'POST') {
@@ -290,7 +296,7 @@ $defaultDuration = ChatService::defaultDuration();
   <title>Roomerang</title>
   <link rel="stylesheet" href="/assets/app.css?v=roomerang-4">
   <link rel="stylesheet" href="/assets/easymde.min.css?v=2.21.0">
-  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-41">
+  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-42">
   <link rel="stylesheet" href="/assets/unavailable.css?v=roomerang-2">
 </head>
 <body>
@@ -363,7 +369,7 @@ $defaultDuration = ChatService::defaultDuration();
   <script src="/assets/share.js?v=roomerang-4" defer></script>
   <?php else: ?>
   <script src="/assets/easymde.min.js?v=2.21.0" defer></script>
-  <script src="/assets/app.js?v=roomerang-45" defer></script>
+  <script src="/assets/app.js?v=roomerang-46" defer></script>
   <?php endif ?>
 </body>
 </html>
