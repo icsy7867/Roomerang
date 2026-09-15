@@ -189,13 +189,14 @@ fieldset input[type="radio"] {
   #send-message { flex: 0 0 112px; min-height: 48px; }
 }
 
-#mode-controls, #master-controls { display: flex; gap: 6px; align-items: center; }
+#mode-controls { display: flex; gap: 6px; align-items: center; }
 #readonly-toggle:disabled { opacity: .85; cursor: default; }
 #readonly-toggle.chat-mode { background: #29466f; border-color: #3a5c89; color: #dbeafe; }
 #readonly-toggle.read-only-mode { background: #4a2933; border-color: #70404b; color: #fecdd3; }
-#active-users { display: grid; gap: 8px; min-width: min(440px, 80vw); }
+#users-dialog { width: min(560px, calc(100vw - 32px)); max-width: calc(100vw - 32px); }
+#active-users { display: grid; width: 100%; min-width: 0; gap: 8px; }
 .active-user { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
-.active-user span { flex: 1; font-size: .9rem; }
+.active-user span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-size: .9rem; }
 .danger { color: #fda4af; }
 
 #file-preview { width: min(1100px, calc(100vw - 32px)); max-width: none; }
@@ -231,7 +232,7 @@ fieldset input[type="radio"] {
     white-space: nowrap;
   }
 
-  #mode-controls, #master-controls { gap: 4px; }
+  #mode-controls { gap: 4px; }
 
   #mode-controls button,
   #copy-link {
@@ -283,7 +284,6 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
 .chat-header { position: relative; }
 #user-meta { margin-left: auto; min-width: 0; max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; background: #1a2940; }
 #chat-actions { display: flex; align-items: center; gap: 8px; }
-#master-controls[hidden] { display: none !important; }
 #chat-menu-toggle { display: none; }
 .message .author { min-width: 0; overflow-wrap: anywhere; }
 .message header { flex-wrap: wrap; }
@@ -330,7 +330,7 @@ button.room-info-chip:not(:disabled) { cursor: pointer; }
   #room-countdown { display: none; }
   #mobile-room-countdown { display: inline-flex; position: static; justify-self: end; }
   #copy-link .share-boomerang { animation: boomerang-throw .72s cubic-bezier(.36,.07,.19,.97); }
-  #mode-controls, #master-controls { display: grid; width: 100%; gap: 8px; }
+  #mode-controls { display: grid; width: 100%; gap: 8px; }
   #chat-actions button { width: 100%; min-height: 44px; font-size: .9rem; white-space: normal; }
   .composer textarea { font-size: 16px; }
 }

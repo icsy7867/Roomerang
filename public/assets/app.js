@@ -353,13 +353,11 @@
       countdownView.setAttribute('aria-label', `Room expires in ${countdown}`);
     });
     if (!countdownTimer) countdownTimer = setInterval(() => updateMeta(currentRoom), 15000);
-    const controls = document.querySelector('#master-controls');
     const modeButton = document.querySelector('#readonly-toggle');
     const modeInfo = document.querySelector('#mode-info');
     const history = document.querySelector('#history-meta');
     const historyInfo = document.querySelector('#history-info');
     const master = Boolean(member?.is_master);
-    controls.hidden = !master;
     modeButton.querySelector('.mode-label').textContent = room.read_only ? 'Read-Only Mode' : 'Chat Mode';
     modeButton.classList.toggle('chat-mode', !room.read_only);
     modeButton.classList.toggle('read-only-mode', Boolean(room.read_only));
@@ -456,7 +454,7 @@
         const row = document.createElement('div'); row.className = 'active-user';
         const label = document.createElement('span'); label.textContent = `${user.display_name} · ${user.session_id}${user.is_master ? ' · Master' : ''}`;
         row.append(label);
-        if (!user.is_master) {
+        if (currentMember?.is_master && !user.is_master) {
           const kick = document.createElement('button'); kick.type='button'; kick.className='quiet'; kick.textContent='Kick'; kick.addEventListener('click', () => moderateUser(user.session_id,'kick'));
           const block = document.createElement('button'); block.type='button'; block.className='quiet danger'; block.textContent='Block'; block.addEventListener('click', () => moderateUser(user.session_id,'block'));
           row.append(kick,block);
@@ -590,12 +588,13 @@
       distances[index] = distances[index - 1] + Math.hypot(points[index].x - points[index - 1].x, points[index].y - points[index - 1].y);
     }
     const distance = distances[distances.length - 1];
+    const spinDegrees = matchMedia('(hover: none) and (pointer: coarse)').matches ? 1296 : 2592;
     const keyframes = points.map((point, index) => {
       const progress = distances[index] / distance;
       return {
         offset:progress,
         opacity:progress < .88 ? 1 : Math.max(0, (1 - progress) / .12),
-        transform:`translate3d(${point.x - rect.width / 2}px, ${point.y - rect.height / 2}px, 0) rotate(${-90 - progress * 2592}deg) scale(${1 + progress * 1.2})`,
+        transform:`translate3d(${point.x - rect.width / 2}px, ${point.y - rect.height / 2}px, 0) rotate(${-90 - progress * spinDegrees}deg) scale(${1 + progress * 1.2})`,
       };
     });
     const animation = flight.animate(keyframes, {duration:distance / .826, easing:'linear', fill:'forwards'});

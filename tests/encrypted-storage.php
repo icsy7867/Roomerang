@@ -24,6 +24,7 @@ try {$service->content($r,$b,$first['id']); throw new LogicException('history le
 $second=$service->post($r,$a,random_bytes(12),random_bytes(32));
 $visible=$service->messages($r,$b);
 check(count($visible)===1 && !$visible[0]['is_mine'],'session ownership despite identical names');
+check(count($service->activeMembers($r,$b))===2,'non-Master members can view active users');
 check(strlen($service->content($r,$b,$second['id']))===44,'binary nonce and ciphertext preserved');
 $share=$service->share($r,$b,$second['id']);
 check(preg_match('/^[A-Za-z0-9_-]{43}$/',$share['token'])===1,'shared message token is opaque');

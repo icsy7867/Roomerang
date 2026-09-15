@@ -290,7 +290,7 @@ $defaultDuration = ChatService::defaultDuration();
   <title>Roomerang</title>
   <link rel="stylesheet" href="/assets/app.css?v=roomerang-4">
   <link rel="stylesheet" href="/assets/easymde.min.css?v=2.21.0">
-  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-40">
+  <link rel="stylesheet" href="/assets/messages.css?v=roomerang-41">
   <link rel="stylesheet" href="/assets/unavailable.css?v=roomerang-2">
 </head>
 <body>
@@ -335,7 +335,7 @@ $defaultDuration = ChatService::defaultDuration();
         <div id="user-meta"></div>
         <button id="chat-menu-toggle" type="button" aria-label="Chat options" aria-controls="chat-actions" aria-expanded="false"><span aria-hidden="true">☰</span></button>
         <div id="chat-actions">
-          <div id="mode-controls"><div id="master-controls" hidden><button id="users-button" class="quiet" type="button">Active users</button></div></div>
+          <div id="mode-controls"><button id="users-button" class="quiet" type="button">Active users</button></div>
           <button id="copy-link" class="quiet" type="button" title="Throw this room" aria-label="Throw this room"><img class="share-boomerang" src="/assets/roomerang.svg?v=1" alt=""></button>
           <span id="mobile-room-countdown" class="room-countdown" role="timer"></span>
         </div>
@@ -363,7 +363,7 @@ $defaultDuration = ChatService::defaultDuration();
   <script src="/assets/share.js?v=roomerang-4" defer></script>
   <?php else: ?>
   <script src="/assets/easymde.min.js?v=2.21.0" defer></script>
-  <script src="/assets/app.js?v=roomerang-44" defer></script>
+  <script src="/assets/app.js?v=roomerang-45" defer></script>
   <?php endif ?>
 </body>
 </html>

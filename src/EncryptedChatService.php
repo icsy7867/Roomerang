@@ -219,7 +219,7 @@ final class EncryptedChatService
     }
     public function activeMembers(array $room, array $member): array
     {
-        $this->requireMaster($room,$member);
+        $this->assertMember($member);
         $cutoff=time()-300;
         $q=$this->db->prepare('SELECT display_name,session_hash,last_seen_at FROM encrypted_members WHERE room_id=? AND blocked=0 AND last_seen_at>=? ORDER BY last_seen_at DESC');
         $q->execute([$room['id'],$cutoff]);
