@@ -285,6 +285,14 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
 #user-meta { margin-left: auto; min-width: 0; max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; background: #1a2940; }
 #chat-actions { display: flex; align-items: center; gap: 8px; }
 #chat-menu-toggle { display: none; }
+#users-button.has-new-users { animation: active-users-pulse 1.8s ease-in-out infinite; }
+@keyframes active-users-pulse {
+  0%, 100% { border-color: var(--line); box-shadow: 0 0 0 0 transparent; }
+  50% { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #users-button.has-new-users { animation: none; border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent); }
+}
 .message .author { min-width: 0; overflow-wrap: anywhere; }
 .message header { flex-wrap: wrap; }
 

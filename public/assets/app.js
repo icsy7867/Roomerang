@@ -386,12 +386,25 @@
   };
   let activeReturnFlight;
   let returningBoomerang;
-  const returnBoomerang = () => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches || activeReturnFlight) return;
+  let usersAttentionVersion = 0;
+  let acknowledgedUsersAttentionVersion = 0;
+  const pulseUsersButton = version => {
+    if (acknowledgedUsersAttentionVersion >= version) return;
+    document.querySelector('#users-button').classList.add('has-new-users');
+  };
+  const returnBoomerang = version => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setTimeout(() => pulseUsersButton(version), 1000);
+      return;
+    }
+    if (activeReturnFlight) {
+      activeReturnFlight.finished.then(() => pulseUsersButton(version), () => setTimeout(() => pulseUsersButton(version), 1000));
+      return;
+    }
     const menuToggle = document.querySelector('#chat-menu-toggle');
     const target = getComputedStyle(menuToggle).display !== 'none' ? menuToggle : document.querySelector('#users-button');
     const targetRect = target.getBoundingClientRect();
-    if (!targetRect.width || !targetRect.height) return;
+    if (!targetRect.width || !targetRect.height) { setTimeout(() => pulseUsersButton(version), 1000); return; }
 
     const width = 27;
     const height = 25;
@@ -401,7 +414,7 @@
     flight.alt = '';
     flight.setAttribute('aria-hidden', 'true');
     document.body.append(flight);
-    if (typeof flight.animate !== 'function') { flight.remove(); return; }
+    if (typeof flight.animate !== 'function') { flight.remove(); setTimeout(() => pulseUsersButton(version), 1000); return; }
     returningBoomerang = flight;
 
     const start = {x:innerWidth - width * 1.7, y:innerHeight - height * 1.7};
@@ -442,7 +455,7 @@
       if (activeReturnFlight === animation) activeReturnFlight = undefined;
       returningBoomerang = undefined;
     };
-    animation.addEventListener('finish', cleanupFlight, {once:true});
+    animation.addEventListener('finish', () => { cleanupFlight(); pulseUsersButton(version); }, {once:true});
     animation.addEventListener('cancel', cleanupFlight, {once:true});
   };
   const updateActiveSessions = sessions => {
@@ -450,7 +463,7 @@
     const next = new Set(sessions);
     const memberJoined = activeSessionIds && sessions.some(session => !activeSessionIds.has(session));
     activeSessionIds = next;
-    if (memberJoined) returnBoomerang();
+    if (memberJoined) returnBoomerang(++usersAttentionVersion);
   };
   const activate = async data => {
     setChatViewport(true);
@@ -720,7 +733,12 @@
       updateMeta(data.room, currentMember);
     } catch (e) { alert(e.message); }
   });
-  document.querySelector('#users-button').addEventListener('click', async () => { document.querySelector('#users-dialog').showModal(); await refreshUsers(); });
+  document.querySelector('#users-button').addEventListener('click', async event => {
+    acknowledgedUsersAttentionVersion = usersAttentionVersion;
+    event.currentTarget.classList.remove('has-new-users');
+    document.querySelector('#users-dialog').showModal();
+    await refreshUsers();
+  });
   if (token) {
     if (/^[A-Za-z0-9_-]{43}$/.test(token)) openRoom();
     else showUnavailable();
