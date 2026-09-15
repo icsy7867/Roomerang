@@ -48,9 +48,11 @@ window.ChatCrypto = (() => {
     if (!text) return {};
     try { return JSON.parse(text); } catch (_) { return {}; }
   }
-  async function send(key,room,data,metadata) {
+  async function send(key,room,data,metadata,storage='database') {
     const wire=await encryptContent(key,room,envelope(data,metadata));
-    const response=await fetch(`/api/chats/${room}/messages`,{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:wire});
+    const headers={'Content-Type':'application/octet-stream'};
+    if (storage === 'attachment') headers['X-Roomerang-Storage']='attachment';
+    const response=await fetch(`/api/chats/${room}/messages`,{method:'POST',headers,body:wire});
     const result=await responseData(response);
     if (!response.ok) {
       if (response.status===413) throw new Error('This upload is larger than the server or reverse proxy allows. Choose a smaller file or increase the proxy request-size limit.');

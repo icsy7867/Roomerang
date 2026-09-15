@@ -54,6 +54,7 @@ final class Database
     public static function reset(): void
     {
         $path = self::path();
+        EncryptedAttachmentStore::reset();
         foreach ([$path, $path . '-wal', $path . '-shm'] as $file) {
             if (file_exists($file) && !unlink($file)) {
                 throw new \RuntimeException('Could not remove the existing database file.');

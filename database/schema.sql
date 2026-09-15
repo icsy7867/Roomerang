@@ -68,6 +68,17 @@ CREATE TABLE IF NOT EXISTS encrypted_messages (
 );
 CREATE INDEX IF NOT EXISTS idx_encrypted_messages_room ON encrypted_messages(room_id, id);
 
+-- Attachment payloads are encrypted client-side and stored as opaque files.
+-- Keeping the object reference separate lets SQLite retain only small message
+-- metadata while preserving the existing database-backed message format.
+CREATE TABLE IF NOT EXISTS encrypted_message_files (
+  message_id INTEGER PRIMARY KEY REFERENCES encrypted_messages(id) ON DELETE CASCADE,
+  storage_key TEXT NOT NULL UNIQUE,
+  wire_bytes INTEGER NOT NULL,
+  wire_sha256 TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
 -- An opaque bearer token can expose one encrypted message while its room remains active.
 -- The AES key stays in the URL fragment and is never stored here.
 CREATE TABLE IF NOT EXISTS encrypted_message_shares (

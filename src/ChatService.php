@@ -42,7 +42,7 @@ final class ChatService
     {
         if (!isset(self::durationChoices()[$duration]) || !in_array($history, ['all', 'since_join'], true)) throw new \InvalidArgumentException('Invalid room settings.');
         $now = time();
-        $this->db->prepare('DELETE FROM rooms WHERE expires_at <= ?')->execute([$now]);
+        EncryptedAttachmentStore::pruneExpired($this->db);
         $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
         $this->db->prepare('INSERT INTO rooms (token, expires_at, history_mode, created_at) VALUES (?, ?, ?, ?)')->execute([$token, $now + self::DURATIONS[$duration], $history, $now]);
         return ['token' => $token, 'expires_at' => $now + self::DURATIONS[$duration], 'history_mode' => $history];

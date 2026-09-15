@@ -6,6 +6,7 @@ require dirname(__DIR__) . '/src/bootstrap.php';
 use App\ChatService;
 use App\AdminService;
 use App\Database;
+use App\EncryptedAttachmentStore;
 use App\Http;
 use App\EncryptedChatService;
 use App\SystemState;
@@ -59,8 +60,8 @@ if (str_starts_with($path, '/admin')) {
             if ($action === 'backup') {
                 if (!SystemState::maintenanceEnabled(Database::connection())) throw new RuntimeException('Enable maintenance mode before creating a backup.');
                 $backup = $admin->backupPath();
-                header('Content-Type: application/vnd.sqlite3');
-                header('Content-Disposition: attachment; filename="roomerang-backup-' . gmdate('Ymd-His') . '.sqlite"');
+                header('Content-Type: application/x-tar');
+                header('Content-Disposition: attachment; filename="roomerang-backup-' . gmdate('Ymd-His') . '.tar"');
                 header('Content-Length: ' . (string)filesize($backup));
                 readfile($backup);
                 @unlink($backup);
@@ -96,7 +97,56 @@ if (str_starts_with($path, '/admin')) {
     elseif ($notice === 'reset') $notice = 'Database reset. Sign in again.';
     else $notice = '';
     ?>
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Roomerang administration</title><link rel="stylesheet" href="/assets/app.css?v=roomerang-2"><link rel="stylesheet" href="/assets/admin.css?v=roomerang-3"></head><body><main class="panel admin-panel"><header class="admin-header"><div><div class="brand"><img class="brand-logo" src="/assets/roomerang.svg?v=1" alt=""><h1>Roomerang</h1></div><h2>Administration</h2></div><form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="logout"><button class="quiet" type="submit">Sign out</button></form></header><?php if ($error !== ''): ?><p class="error"><?= $escape($error) ?></p><?php endif ?><?php if ($notice !== ''): ?><p class="admin-notice"><?= $escape($notice) ?></p><?php endif ?><section><h3>Chat statistics</h3><dl class="admin-stats"><div><dt>Total chats</dt><dd><?= $stats['total_chats'] ?></dd></div><div><dt>Active chats</dt><dd><?= $stats['active_chats'] ?></dd></div><div><dt>Expired chats awaiting prune</dt><dd><?= $stats['expired_chats'] ?></dd></div><div><dt>Chats with no messages</dt><dd><?= $stats['empty_chats'] ?></dd></div><div><dt>Most messages in an active chat</dt><dd><?= $stats['maximum_messages'] ?></dd></div><div><dt>Average messages per active chat</dt><dd><?= $stats['average_messages'] ?></dd></div></dl></section><section class="admin-card"><h3>Maintenance mode</h3><p><?= $stats['maintenance_mode'] ? 'Enabled: chat rooms remain readable to existing members, but room creation, new joins, messages, and room moderation are blocked.' : 'Disabled: normal room operations are available.' ?></p><form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="maintenance"><input type="hidden" name="enabled" value="<?= $stats['maintenance_mode'] ? '0' : '1' ?>"><button class="<?= $stats['maintenance_mode'] ? 'primary' : 'quiet danger' ?>" type="submit"><?= $stats['maintenance_mode'] ? 'End maintenance' : 'Enable maintenance' ?></button></form></section><section class="admin-card"><h3>Database care</h3><p>Integrity check: <strong><?= $escape($stats['integrity']) ?></strong>. Expired rooms are automatically inaccessible and cascaded data is deleted when pruned.</p><div class="admin-actions"><form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="prune"><button class="quiet" type="submit">Prune expired chats</button></form><form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="backup"><button class="primary" type="submit"<?= $stats['maintenance_mode'] ? '' : ' disabled' ?>>Download SQLite backup</button></form></div><p class="admin-help">Enable maintenance before a backup. Restore is intentionally an operator task: stop the web container, replace the database and its <code>-wal</code>/<code>-shm</code> sidecars from a verified backup, then restart it.</p></section><section class="admin-card reset-card"><h3>Reset database</h3><p><strong>This permanently deletes every chat, message, attachment, shared-message link, member, and admin session.</strong> Only reset when this is the sole application task using the database volume. The database and its SQLite sidecars are removed and recreated with the bundled schema.</p><form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="reset"><label>Type <code>RESET ALL CHATS</code> to confirm<input name="reset_confirmation" type="text" autocomplete="off" spellcheck="false" required></label><button class="danger" type="submit">Permanently reset database</button></form></section></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roomerang administration</title>
+  <link rel="stylesheet" href="/assets/app.css?v=roomerang-2">
+  <link rel="stylesheet" href="/assets/admin.css?v=roomerang-3">
+</head>
+<body>
+  <main class="panel admin-panel">
+    <header class="admin-header">
+      <div><div class="brand"><img class="brand-logo" src="/assets/roomerang.svg?v=1" alt=""><h1>Roomerang</h1></div><h2>Administration</h2></div>
+      <form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="logout"><button class="quiet" type="submit">Sign out</button></form>
+    </header>
+    <?php if ($error !== ''): ?><p class="error"><?= $escape($error) ?></p><?php endif ?>
+    <?php if ($notice !== ''): ?><p class="admin-notice"><?= $escape($notice) ?></p><?php endif ?>
+    <section>
+      <h3>Chat statistics</h3>
+      <dl class="admin-stats">
+        <div><dt>Total chats</dt><dd><?= $stats['total_chats'] ?></dd></div>
+        <div><dt>Active chats</dt><dd><?= $stats['active_chats'] ?></dd></div>
+        <div><dt>Expired chats awaiting prune</dt><dd><?= $stats['expired_chats'] ?></dd></div>
+        <div><dt>Chats with no messages</dt><dd><?= $stats['empty_chats'] ?></dd></div>
+        <div><dt>Most messages in an active chat</dt><dd><?= $stats['maximum_messages'] ?></dd></div>
+        <div><dt>Average messages per active chat</dt><dd><?= $stats['average_messages'] ?></dd></div>
+      </dl>
+    </section>
+    <section class="admin-card">
+      <h3>Maintenance mode</h3>
+      <p><?= $stats['maintenance_mode'] ? 'Enabled: chat rooms remain readable to existing members, but room creation, new joins, messages, and room moderation are blocked.' : 'Disabled: normal room operations are available.' ?></p>
+      <form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="maintenance"><input type="hidden" name="enabled" value="<?= $stats['maintenance_mode'] ? '0' : '1' ?>"><button class="<?= $stats['maintenance_mode'] ? 'primary' : 'quiet danger' ?>" type="submit"><?= $stats['maintenance_mode'] ? 'End maintenance' : 'Enable maintenance' ?></button></form>
+    </section>
+    <section class="admin-card">
+      <h3>Database care</h3>
+      <p>Integrity check: <strong><?= $escape($stats['integrity']) ?></strong>. Expired rooms are automatically inaccessible and cascaded data is deleted when pruned.</p>
+      <div class="admin-actions">
+        <form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="prune"><button class="quiet" type="submit">Prune expired chats</button></form>
+        <form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="backup"><button class="primary" type="submit"<?= $stats['maintenance_mode'] ? '' : ' disabled' ?>>Download backup archive</button></form>
+      </div>
+      <p class="admin-help">Enable maintenance before a backup. The archive includes the SQLite database and encrypted attachment files. To restore, stop the web container, replace both on the data volume from a verified archive, then restart it.</p>
+    </section>
+    <section class="admin-card reset-card">
+      <h3>Reset database</h3>
+      <p><strong>This permanently deletes every chat, message, attachment, shared-message link, member, and admin session.</strong> Only reset when this is the sole application task using the database volume. The database, encrypted attachment files, and SQLite sidecars are removed and recreated with the bundled schema.</p>
+      <form method="post"><input type="hidden" name="csrf" value="<?= $escape($session['csrf_token']) ?>"><input type="hidden" name="action" value="reset"><label>Type <code>RESET ALL CHATS</code> to confirm<input name="reset_confirmation" type="text" autocomplete="off" spellcheck="false" required></label><button class="danger" type="submit">Permanently reset database</button></form>
+    </section>
+  </main>
+</body>
+</html>
     <?php
     exit;
 }
@@ -119,9 +169,16 @@ if (str_starts_with($path, '/api/')) {
             if ($method !== 'GET') Http::json(['error'=>'Not found.'],404);
             $shared=$service->shared($shareMatch[1]);
             if (($shareMatch[2] ?? '') === 'content') {
+                $source = $service->sharedContentSource($shared);
                 header('Content-Type: application/octet-stream');
                 header('Cache-Control: no-store');
-                echo $service->sharedContent($shared);
+                if (isset($source['bytes'])) {
+                    header('Content-Length: ' . (string)strlen($source['bytes']));
+                    echo $source['bytes'];
+                } else {
+                    header('Content-Length: ' . (string)$source['wire_bytes']);
+                    EncryptedAttachmentStore::stream($source['storage_key'], $source['wire_bytes']);
+                }
                 exit;
             }
             Http::json(['message'=>$service->sharedView($shared)]);
@@ -164,10 +221,16 @@ if (str_starts_with($path, '/api/')) {
                 Http::json(['share'=>$service->share($room,$member,(int)$matches[3])],201);
             }
             if ($method !== 'GET' || $action !== 'messages') Http::json(['error'=>'Not found.'],404);
-            $bytes=$service->content($room,$member,(int)$matches[3]);
+            $source=$service->contentSource($room,$member,(int)$matches[3]);
             header('Content-Type: application/octet-stream');
             header('Cache-Control: no-store');
-            echo $bytes;
+            if (isset($source['bytes'])) {
+                header('Content-Length: ' . (string)strlen($source['bytes']));
+                echo $source['bytes'];
+            } else {
+                header('Content-Length: ' . (string)$source['wire_bytes']);
+                EncryptedAttachmentStore::stream($source['storage_key'], $source['wire_bytes']);
+            }
             exit;
         }
         $member = $service->touch($room,$member);
@@ -180,6 +243,11 @@ if (str_starts_with($path, '/api/')) {
         }
         if ($action === 'messages' && $method === 'POST') {
             if (($_SERVER['CONTENT_TYPE'] ?? '') !== 'application/octet-stream') Http::json(['error'=>'Encrypted binary payload required.'],415);
+            if (($_SERVER['HTTP_X_ROOMERANG_STORAGE'] ?? '') === 'attachment') {
+                $service->requireCanPost($room, $member);
+                $staged = EncryptedAttachmentStore::stageInput();
+                Http::json(['message'=>$service->postAttachment($room,$member,$staged)],201);
+            }
             $bytes=file_get_contents('php://input',false,null,0,EncryptedChatService::MAX_CIPHERTEXT+13);
             Http::json(['message'=>$service->post($room,$member,substr($bytes,0,12),substr($bytes,12))],201);
         }
@@ -284,12 +352,12 @@ $defaultDuration = ChatService::defaultDuration();
   <dialog id="share-dialog"><form method="dialog" class="share-dialog"><header><strong id="share-title">Throw this room</strong><button class="quiet" value="cancel">Close</button></header><p id="share-description">Anyone with this complete link can join this room.</p><label>Link<input id="share-url" type="text" readonly spellcheck="false"></label><button id="share-copy" class="primary" type="button">Copy link</button><section class="room-info"><h3>Room Info</h3><div class="room-info-options"><span class="room-info-control"><span id="history-meta" class="room-info-chip"><span class="history-label">History: Full</span></span><span id="history-info" class="info-icon" tabindex="0" aria-label="History information">i</span></span><span class="room-info-control"><button id="readonly-toggle" class="room-info-chip" type="button" disabled><span class="mode-label">Chat Mode</span></button><span id="mode-info" class="info-icon" tabindex="0" aria-label="Room mode information">i</span></span></div></section></form></dialog>
   <dialog id="file-preview"><form method="dialog" class="preview-dialog"><header><strong id="preview-title">File preview</strong><button class="quiet" value="cancel">Close</button></header><div id="preview-content"></div></form></dialog>
   <template id="message-template"><article class="message"><header><strong class="author"></strong><time></time><button class="share-message quiet" type="button" title="Throw this message" aria-label="Throw this message"><img class="share-boomerang" src="/assets/roomerang.svg?v=1" alt=""></button><button class="copy-message quiet">Copy message</button></header><div class="message-body"></div></article></template>
-  <script src="/assets/crypto.js?v=roomerang-3" defer></script>
+  <script src="/assets/crypto.js?v=roomerang-4" defer></script>
   <?php if ($shareToken !== null): ?>
   <script src="/assets/share.js?v=roomerang-4" defer></script>
   <?php else: ?>
   <script src="/assets/easymde.min.js?v=2.21.0" defer></script>
-  <script src="/assets/app.js?v=roomerang-36" defer></script>
+  <script src="/assets/app.js?v=roomerang-37" defer></script>
   <?php endif ?>
 </body>
 </html>

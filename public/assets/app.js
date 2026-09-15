@@ -518,7 +518,8 @@
     button.disabled = true;
     try {
       let data, metadata;
-      if (pendingAttachment) {
+      const storesAttachment = Boolean(pendingAttachment);
+      if (storesAttachment) {
         const text = new TextEncoder().encode(body);
         const file = new Uint8Array(await pendingAttachment.arrayBuffer());
         data = new Uint8Array(text.byteLength + file.byteLength);
@@ -528,7 +529,7 @@
         data = new TextEncoder().encode(body);
         metadata = {kind:'text',mime:'text/markdown',name:''};
       }
-      const message = await ChatCrypto.send(roomKey,token,data.buffer,metadata);
+      const message = await ChatCrypto.send(roomKey,token,data.buffer,metadata,storesAttachment ? 'attachment' : 'database');
       await display(message, {...metadata, data:data.buffer}); setEditorValue(''); pendingAttachment = undefined; updatePendingAttachment(); updateCharacterCount(); scrollToLatest();
     }
     catch (error) { alert(error.message); } finally { button.disabled = false; }

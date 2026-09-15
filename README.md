@@ -23,7 +23,7 @@ podman build --format docker -t roomerang:local .
 
 Use `make build IMAGE=roomerang:dev` to choose a different local tag.
 
-The database is `/app/data/database.sql`. On startup the container creates it when missing, applies the bundled schema in `database/schema.sql`, and refuses to start if SQLite's integrity check fails. The image uses no external runtime services.
+The database is `/app/data/database.sql`; encrypted attachment payloads are stored separately under `/app/data/files`. On startup the container creates the database when missing, applies the bundled schema in `database/schema.sql`, and refuses to start if SQLite's integrity check fails. The image uses no external runtime services.
 
 ## Environment variables
 
@@ -49,11 +49,13 @@ docker run --rm -p 8080:8080 \
 
 ## Administration and backups
 
-Set `ADMIN_PASSWORD` or `ADMIN_PASSWORD_HASH` to enable `/admin`; without either, the route returns 404. The console reports total, active, expired, and empty chat counts plus maximum and average message counts for active chats. It also exposes integrity status, expiry pruning, a global maintenance mode, and a consistent SQLite backup download.
+Set `ADMIN_PASSWORD` or `ADMIN_PASSWORD_HASH` to enable `/admin`; without either, the route returns 404. The console reports total, active, expired, and empty chat counts plus maximum and average message counts for active chats. It also exposes integrity status, expiry pruning, a global maintenance mode, and a consistent backup archive download.
 
 Maintenance mode leaves existing joined members able to read rooms but prevents room creation, new joins, messages, and room moderation. Enable it before downloading a backup. Room expiry remains enforced while maintenance mode is on.
 
-Restore is deliberately an operator procedure rather than a browser upload. Enable maintenance, stop every application container using the database, replace the database with a verified SQLite backup, remove any stale `database.sql-wal` and `database.sql-shm` files, then start the application. The startup integrity check will refuse a corrupt database.
+The Admin backup is a `.tar` archive containing `database.sqlite` and every referenced encrypted attachment under `files/`. It verifies each attachment's size and SHA-256 before including it, and refuses to create a partial backup. Store the archive outside EFS.
+
+Restore is deliberately an operator procedure rather than a browser upload. Enable maintenance, stop every application container using the data volume, unpack a verified archive into a temporary directory, then replace both `/app/data/database.sql` with `database.sqlite` and `/app/data/files` with the archive's `files` directory. Remove any stale `database.sql-wal` and `database.sql-shm` files, then start the application. The startup integrity check will refuse a corrupt database, and startup removes orphaned attachment files left by an interrupted upload.
 
 For a development/beta recovery where preserving chats is not required, the Admin console provides a destructive **Reset database** control. It requires typing `RESET ALL CHATS`, permanently removes all chat and admin data plus SQLite sidecars, and recreates the database with the bundled schema. Use it only while one application task has access to the database volume; it is not a repair mechanism for production data.
 
@@ -67,7 +69,7 @@ Joining a room loads the latest 25 messages first. The browser downloads and dec
 
 All new rooms use AES-256-GCM in the browser. The 32-byte key is carried in the URL fragment (`#...`) and never included in API requests. Share the **complete** link. HTTPS is required except on localhost; missing or incorrect keys cannot be recovered by the server.
 
-Text, images, and files share encrypted binary envelopes. An attachment is staged in the composer and is sent only when Send is pressed; a message can contain text, an attachment, or both. Filenames and MIME types are inside the encrypted envelope. The combined text-and-file payload is limited to 8 MiB; uploads are currently whole-file, with a versioned envelope and separate transport functions for future chunking. Downloaded files are not executed or embedded; only PNG/JPEG/GIF/WebP are rendered as images.
+Text, images, and files share encrypted binary envelopes. An attachment is staged in the composer and is sent only when Send is pressed; a message can contain text, an attachment, or both. Filenames and MIME types are inside the encrypted envelope. The combined text-and-file payload is limited to 8 MiB; uploads are currently whole-file, with a versioned envelope and separate transport functions for future chunking. Attachment ciphertext is streamed to opaque, random-keyed files under `/app/data/files`, while SQLite retains only the message metadata and the file reference. The files are outside the public web root and are served only after the same room, member, expiry, and history checks as database-backed messages. Downloaded files are not executed or embedded; only PNG/JPEG/GIF/WebP are rendered as images.
 
 The server sees room/session identifiers, display names, timestamps, ciphertext lengths, and traffic patterns. This shared-room-key model does not authenticate individual senders cryptographically. History visibility is server-enforced; anyone possessing the key can decrypt older ciphertext if they obtain it. The served JavaScript must be trusted: a compromised server can change the client. There is no external analytics or CDN dependency.
 
@@ -83,7 +85,7 @@ Validation: `podman run --rm --entrypoint php paste-chat:local /app/tests/encryp
 
 Room creation generates the server-visible room token and a separate 32-byte AES key in the browser. The application redirects to `/chat/{token}#{key}`; the origin comes from the current request, so a deployment at `https://paste-chat.io` produces links on that host rather than hard-coding localhost. The fragment is never sent in an HTTP request.
 
-`public/assets/crypto.js` uses a versioned binary envelope: a four-byte big-endian metadata length, UTF-8 JSON metadata (`v`, `kind`, `mime`, and `name`), then the content bytes encrypted with AES-256-GCM. Version 1 stores text-only or file-only content. Version 2 stores an attachment's encrypted text-byte boundary (`text_bytes`) followed by text and file bytes, so a single message can render text above its attachment. The 12-byte nonce is prepended to the encrypted envelope for the message POST. AES-GCM additional authenticated data binds the room token to the ciphertext. The API stores only the nonce/ciphertext BLOB and clear operational metadata such as sender display name, timestamp, and length.
+`public/assets/crypto.js` uses a versioned binary envelope: a four-byte big-endian metadata length, UTF-8 JSON metadata (`v`, `kind`, `mime`, and `name`), then the content bytes encrypted with AES-256-GCM. Version 1 stores text-only or file-only content. Version 2 stores an attachment's encrypted text-byte boundary (`text_bytes`) followed by text and file bytes, so a single message can render text above its attachment. The 12-byte nonce is prepended to the encrypted envelope for the message POST. AES-GCM additional authenticated data binds the room token to the ciphertext. Text messages remain nonce/ciphertext BLOBs in SQLite; attachment ciphertext remains the same opaque wire format in files, while SQLite records its random object key, byte count, backup-verification hash, and clear operational metadata such as sender display name and timestamp.
 
 The current 8 MiB limit applies to the full plaintext payload before encryption: for an attachment message, that is the UTF-8 text plus the raw file bytes. Filename and MIME metadata are encrypted inside the envelope. Whole-file encryption is intentional for now; the envelope and transport helpers are versioned so a future chunked format can be added without treating ciphertext as text. Shared images and PDFs open a larger local preview using the browser `FileReader` API. PDFs use a temporary local `blob:` URL so the browser’s built-in PDF viewer can render them; the URL is revoked when the preview closes.
 

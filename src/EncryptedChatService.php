@@ -108,14 +108,55 @@ final class EncryptedChatService
         $q->bindValue(3,$nonce,PDO::PARAM_LOB); $q->bindValue(4,$ciphertext,PDO::PARAM_LOB); $q->bindValue(5,time(),PDO::PARAM_INT); $q->execute();
         return ['id'=>(int)$this->db->lastInsertId(),'created_at'=>time(),'display_name'=>$member['display_name'],'is_mine'=>true];
     }
-    public function content(array $room,array $member,int $id): string
+
+    /** @param array{path:string,bytes:int,sha256:string,nonce:string} $staged */
+    public function postAttachment(array $room, array $member, array $staged): array
+    {
+        $this->requireCanPost($room, $member);
+        $ciphertextBytes = $staged['bytes'] - 12;
+        if (strlen($staged['nonce']) !== 12 || $ciphertextBytes < 20 || $ciphertextBytes > self::MAX_CIPHERTEXT) {
+            EncryptedAttachmentStore::discard($staged['path']);
+            throw new \InvalidArgumentException('Invalid encrypted payload or file exceeds 8 MB.');
+        }
+
+        $key = EncryptedAttachmentStore::newKey();
+        $now = time();
+        $promoted = false;
+        $this->db->beginTransaction();
+        try {
+            $message = $this->db->prepare('INSERT INTO encrypted_messages(room_id,session_hash,nonce,ciphertext,created_at) VALUES (?,?,?,zeroblob(0),?)');
+            $message->execute([$room['id'], $member['session_hash'], $staged['nonce'], $now]);
+            $messageId = (int)$this->db->lastInsertId();
+            $file = $this->db->prepare('INSERT INTO encrypted_message_files(message_id,storage_key,wire_bytes,wire_sha256,created_at) VALUES (?,?,?,?,?)');
+            $file->execute([$messageId, $key, $staged['bytes'], $staged['sha256'], $now]);
+            EncryptedAttachmentStore::promote($staged['path'], $key);
+            $promoted = true;
+            $this->db->commit();
+            return ['id'=>$messageId,'created_at'=>$now,'display_name'=>$member['display_name'],'is_mine'=>true];
+        } catch (\Throwable $error) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            if ($promoted) EncryptedAttachmentStore::remove($key);
+            else EncryptedAttachmentStore::discard($staged['path']);
+            throw $error;
+        }
+    }
+
+    /** @return array{bytes?:string,storage_key?:string,wire_bytes?:int} */
+    public function contentSource(array $room, array $member, int $id): array
     {
         $this->assertMember($member);
         $boundary=$room['history_mode']==='since_join' ? (int)$member['after_id'] : 0;
-        $q=$this->db->prepare('SELECT nonce,ciphertext FROM encrypted_messages WHERE room_id=? AND id=? AND id>?');
+        $q=$this->db->prepare('SELECT m.nonce,m.ciphertext,f.storage_key,f.wire_bytes FROM encrypted_messages m LEFT JOIN encrypted_message_files f ON f.message_id=m.id WHERE m.room_id=? AND m.id=? AND m.id>?');
         $q->execute([$room['id'],$id,$boundary]); $m=$q->fetch();
         if(!$m) throw new \RuntimeException('Message unavailable.');
-        return $m['nonce'].$m['ciphertext'];
+        if ($m['storage_key'] !== null) return ['storage_key'=>(string)$m['storage_key'],'wire_bytes'=>(int)$m['wire_bytes']];
+        return ['bytes'=>$m['nonce'].$m['ciphertext']];
+    }
+
+    public function content(array $room,array $member,int $id): string
+    {
+        $source = $this->contentSource($room, $member, $id);
+        return isset($source['bytes']) ? $source['bytes'] : EncryptedAttachmentStore::read($source['storage_key'], $source['wire_bytes']);
     }
     public function share(array $room, array $member, int $id): array
     {
@@ -136,7 +177,7 @@ final class EncryptedChatService
     }
     public function shared(string $token): array
     {
-        $q=$this->db->prepare('SELECT s.token,r.token AS room_token,m.id,m.created_at,s.display_name,m.nonce,m.ciphertext FROM encrypted_message_shares s JOIN encrypted_messages m ON m.id=s.message_id JOIN rooms r ON r.id=m.room_id WHERE s.token=? AND r.expires_at>?');
+        $q=$this->db->prepare('SELECT s.token,r.token AS room_token,m.id,m.created_at,s.display_name,m.nonce,m.ciphertext,f.storage_key,f.wire_bytes FROM encrypted_message_shares s JOIN encrypted_messages m ON m.id=s.message_id JOIN rooms r ON r.id=m.room_id LEFT JOIN encrypted_message_files f ON f.message_id=m.id WHERE s.token=? AND r.expires_at>?');
         $q->execute([$token,time()]);
         return $q->fetch() ?: throw new \RuntimeException('This shared message does not exist or has expired.');
     }
@@ -146,7 +187,15 @@ final class EncryptedChatService
     }
     public function sharedContent(array $shared): string
     {
-        return $shared['nonce'].$shared['ciphertext'];
+        $source = $this->sharedContentSource($shared);
+        return isset($source['bytes']) ? $source['bytes'] : EncryptedAttachmentStore::read($source['storage_key'], $source['wire_bytes']);
+    }
+
+    /** @return array{bytes?:string,storage_key?:string,wire_bytes?:int} */
+    public function sharedContentSource(array $shared): array
+    {
+        if ($shared['storage_key'] !== null) return ['storage_key'=>(string)$shared['storage_key'],'wire_bytes'=>(int)$shared['wire_bytes']];
+        return ['bytes'=>$shared['nonce'].$shared['ciphertext']];
     }
     public function requireCanPost(array $room, array $member): void
     {

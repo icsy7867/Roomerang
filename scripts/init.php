@@ -23,11 +23,12 @@ try {
         $db->exec('ALTER TABLE encrypted_members ADD COLUMN last_seen_at INTEGER NOT NULL DEFAULT 0');
     }
     $db->exec('UPDATE encrypted_rooms SET master_session_hash=(SELECT session_hash FROM encrypted_members WHERE encrypted_members.room_id=encrypted_rooms.room_id ORDER BY rowid LIMIT 1) WHERE master_session_hash IS NULL');
-    $db->prepare('DELETE FROM rooms WHERE expires_at <= ?')->execute([time()]);
+    App\EncryptedAttachmentStore::pruneExpired($db);
     $check = $db->query('PRAGMA integrity_check')->fetchColumn();
     if ($check !== 'ok') {
         throw new RuntimeException('SQLite integrity check failed: ' . $check);
     }
+    App\EncryptedAttachmentStore::cleanupOrphans($db);
     App\Database::clearIntegrityFailure();
 } catch (Throwable $e) {
     App\Database::markIntegrityFailure($e->getMessage());

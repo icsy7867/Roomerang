@@ -117,22 +117,36 @@ final class AdminService
 
     public function pruneExpired(): int
     {
-        $statement = $this->db()->prepare('DELETE FROM rooms WHERE expires_at <= ?');
-        $statement->execute([time()]);
+        $deleted = EncryptedAttachmentStore::pruneExpired($this->db());
         $this->db()->exec('PRAGMA optimize');
-        return $statement->rowCount();
+        return $deleted;
     }
 
     public function backupPath(): string
     {
-        $path = tempnam(sys_get_temp_dir(), 'roomerang-backup-');
-        if ($path === false) throw new \RuntimeException('Could not create a temporary backup file.');
-        @unlink($path);
+        if (!class_exists(\PharData::class)) throw new \RuntimeException('PHP archive support is unavailable.');
+        $temporary = tempnam(sys_get_temp_dir(), 'roomerang-backup-');
+        if ($temporary === false) throw new \RuntimeException('Could not create a temporary backup file.');
+        $archive = $temporary . '.tar';
+        @unlink($temporary);
+        $database = $temporary . '.sqlite';
         try {
-            $this->db()->exec('VACUUM INTO ' . $this->db()->quote($path));
-            return $path;
+            $this->db()->exec('VACUUM INTO ' . $this->db()->quote($database));
+            $tar = new \PharData($archive);
+            $tar->addFile($database, 'database.sqlite');
+            $tar->addEmptyDir('files');
+            foreach (EncryptedAttachmentStore::referenced($this->db()) as $file) {
+                $path = EncryptedAttachmentStore::path($file['storage_key']);
+                if (!is_file($path) || filesize($path) !== (int)$file['wire_bytes'] || hash_file('sha256', $path) !== $file['wire_sha256']) {
+                    throw new \RuntimeException('An encrypted attachment is missing or damaged; backup was not created.');
+                }
+                $tar->addFile($path, 'files/' . substr($file['storage_key'], 0, 2) . '/' . substr($file['storage_key'], 2, 2) . '/' . $file['storage_key'] . '.blob');
+            }
+            @unlink($database);
+            return $archive;
         } catch (\Throwable $error) {
-            @unlink($path);
+            @unlink($database);
+            @unlink($archive);
             throw $error;
         }
     }
