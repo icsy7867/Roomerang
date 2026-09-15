@@ -595,17 +595,20 @@
       return {
         offset:progress,
         opacity:progress < .88 ? 1 : Math.max(0, (1 - progress) / .12),
-        transform:`translate3d(${point.x - rect.width / 2}px, ${point.y - rect.height / 2}px, 0) rotate(${-90 - progress * 1080}deg) scale(${1 + progress * 1.2})`,
+        transform:`translate3d(${point.x - rect.width / 2}px, ${point.y - rect.height / 2}px, 0) rotate(${-90 - progress * 1296}deg) scale(${1 + progress * 1.2})`,
       };
     });
     const animation = flight.animate(keyframes, {duration:distance / .826, easing:'linear', fill:'forwards'});
     activeShareFlight = animation;
-    animation.addEventListener('finish', () => {
+    const cleanupFlight = () => {
       flight.remove();
+      if (flyingShareBoomerang !== flight) return;
       shareDialog.classList.remove('is-throwing');
       if (activeShareFlight === animation) activeShareFlight = undefined;
-      if (flyingShareBoomerang === flight) flyingShareBoomerang = undefined;
-    }, {once:true});
+      flyingShareBoomerang = undefined;
+    };
+    animation.addEventListener('finish', cleanupFlight, {once:true});
+    animation.addEventListener('cancel', cleanupFlight, {once:true});
   };
   const openShareDialog = (url, title, description) => {
     document.querySelector('#share-title').textContent = title;
@@ -622,6 +625,9 @@
     throwShareBoomerang();
     copy(shareUrl.value, event.currentTarget);
   });
+  shareDialog.addEventListener('cancel', resetShareThrow);
+  shareDialog.addEventListener('close', resetShareThrow);
+  shareDialog.querySelector('button[value="cancel"]').addEventListener('click', resetShareThrow);
   const menuToggle = document.querySelector('#chat-menu-toggle');
   const menuActions = document.querySelector('#chat-actions');
   const closeMenu = () => { menuToggle.setAttribute('aria-expanded', 'false'); menuActions.classList.remove('is-open'); };

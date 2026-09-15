@@ -290,7 +290,7 @@ body { min-height: 100dvh; background-repeat: no-repeat; background-attachment: 
 
 #copy-link { display: inline-grid; place-items: center; min-width: 38px; min-height: 34px; padding: 5px 8px; }
 .share-boomerang { display: block; width: 22px; height: 20px; object-fit: contain; transform: rotate(-90deg); transform-origin: center; }
-#copy-link:hover .share-boomerang, #copy-link:focus-visible .share-boomerang { animation: boomerang-throw .72s cubic-bezier(.36,.07,.19,.97) infinite; }
+#copy-link:hover .share-boomerang, #copy-link:focus-visible .share-boomerang { animation: boomerang-throw .72s cubic-bezier(.36,.07,.19,.97); }
 .share-message { display: inline-grid; place-items: center; min-width: 30px; min-height: 28px; padding: 3px; }
 .share-message .share-boomerang { width: 18px; height: 17px; }
 .share-message:hover .share-boomerang, .share-message:focus-visible .share-boomerang { animation: boomerang-throw .72s cubic-bezier(.36,.07,.19,.97) infinite; }
@@ -329,7 +329,7 @@ button.room-info-chip:not(:disabled) { cursor: pointer; }
   #chat-actions.is-open { display: grid; gap: 8px; }
   #room-countdown { display: none; }
   #mobile-room-countdown { display: inline-flex; position: static; justify-self: end; }
-  #copy-link .share-boomerang { animation: boomerang-throw .72s cubic-bezier(.36,.07,.19,.97) infinite; }
+  #copy-link .share-boomerang { animation: boomerang-throw .72s cubic-bezier(.36,.07,.19,.97); }
   #mode-controls, #master-controls { display: grid; width: 100%; gap: 8px; }
   #chat-actions button { width: 100%; min-height: 44px; font-size: .9rem; white-space: normal; }
   .composer textarea { font-size: 16px; }
