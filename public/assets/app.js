@@ -568,9 +568,11 @@
     flyingShareBoomerang = flight;
 
     const start = {x:rect.left + rect.width / 2, y:rect.top + rect.height / 2};
-    const end = {x:innerWidth + rect.width * 2.2, y:Math.min(innerHeight - rect.height * 2, start.y + 12)};
-    const travel = end.x - start.x;
-    const arcHeight = Math.min(110, Math.max(35, travel * .1), Math.max(0, start.y - rect.height * 1.4));
+    const endX = innerWidth + rect.width * 2.2;
+    const travel = endX - start.x;
+    const originalArcHeight = Math.min(110, Math.max(35, travel * .1), Math.max(0, start.y - rect.height * 1.4));
+    const arcHeight = originalArcHeight * .8;
+    const end = {x:endX, y:Math.min(innerHeight - rect.height * 2, start.y + 12 + originalArcHeight * .2)};
     const controls = [
       {x:start.x + travel * .32, y:start.y - arcHeight},
       {x:start.x + travel * .73, y:start.y - arcHeight},
@@ -596,7 +598,7 @@
         transform:`translate3d(${point.x - rect.width / 2}px, ${point.y - rect.height / 2}px, 0) rotate(${-90 - progress * 1080}deg) scale(${1 + progress * 1.2})`,
       };
     });
-    const animation = flight.animate(keyframes, {duration:distance / .7, easing:'linear', fill:'forwards'});
+    const animation = flight.animate(keyframes, {duration:distance / .826, easing:'linear', fill:'forwards'});
     activeShareFlight = animation;
     animation.addEventListener('finish', () => {
       flight.remove();
