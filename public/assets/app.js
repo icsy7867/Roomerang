@@ -595,7 +595,7 @@
       return {
         offset:progress,
         opacity:progress < .88 ? 1 : Math.max(0, (1 - progress) / .12),
-        transform:`translate3d(${point.x - rect.width / 2}px, ${point.y - rect.height / 2}px, 0) rotate(${-90 - progress * 1296}deg) scale(${1 + progress * 1.2})`,
+        transform:`translate3d(${point.x - rect.width / 2}px, ${point.y - rect.height / 2}px, 0) rotate(${-90 - progress * 2592}deg) scale(${1 + progress * 1.2})`,
       };
     });
     const animation = flight.animate(keyframes, {duration:distance / .826, easing:'linear', fill:'forwards'});

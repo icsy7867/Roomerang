@@ -363,7 +363,7 @@ $defaultDuration = ChatService::defaultDuration();
   <script src="/assets/share.js?v=roomerang-4" defer></script>
   <?php else: ?>
   <script src="/assets/easymde.min.js?v=2.21.0" defer></script>
-  <script src="/assets/app.js?v=roomerang-43" defer></script>
+  <script src="/assets/app.js?v=roomerang-44" defer></script>
   <?php endif ?>
 </body>
 </html>
