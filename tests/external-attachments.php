@@ -35,12 +35,20 @@ try {
     check($file !== false && $file['wire_bytes'] === strlen($wire), 'attachment metadata is stored separately');
     check((int)$db->query('SELECT length(ciphertext) FROM encrypted_messages WHERE id=' . (int)$message['id'])->fetchColumn() === 0, 'attachment ciphertext is absent from SQLite');
     check(is_file(App\EncryptedAttachmentStore::path($file['storage_key'])), 'attachment ciphertext is promoted to opaque file storage');
+    check(substr_count(App\EncryptedAttachmentStore::relativePath($file['storage_key']), '/') === 1, 'new attachments use one EFS shard directory');
 
     $source = $service->contentSource($room, $member, $message['id']);
     check(!isset($source['bytes']) && $source['wire_bytes'] === strlen($wire), 'member content uses attachment source metadata');
     ob_start();
     App\EncryptedAttachmentStore::stream($source['storage_key'], $source['wire_bytes']);
     check(ob_get_clean() === $wire, 'member content streams exact encrypted attachment bytes');
+
+    $currentPath = App\EncryptedAttachmentStore::path($file['storage_key']);
+    $legacyDirectory = App\EncryptedAttachmentStore::directory() . '/' . substr($file['storage_key'], 0, 2) . '/' . substr($file['storage_key'], 2, 2);
+    mkdir($legacyDirectory, 0700, true);
+    $legacyPath = $legacyDirectory . '/' . $file['storage_key'] . '.blob';
+    rename($currentPath, $legacyPath);
+    check(App\EncryptedAttachmentStore::path($file['storage_key']) === $legacyPath, 'existing two-level attachment paths remain readable');
 
     $share = $service->share($room, $member, $message['id']);
     $shared = $service->shared($share['token']);
@@ -54,7 +62,7 @@ try {
 
     $archive = (new App\AdminService($db))->backupPath();
     $tar = new PharData($archive);
-    $archivePath = 'files/' . substr($file['storage_key'], 0, 2) . '/' . substr($file['storage_key'], 2, 2) . '/' . $file['storage_key'] . '.blob';
+    $archivePath = 'files/' . App\EncryptedAttachmentStore::relativePath($file['storage_key']);
     check($tar->offsetExists('database.sqlite') && $tar->offsetExists($archivePath), 'backup archive includes database and encrypted attachment');
     unset($tar);
     unlink($archive);

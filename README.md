@@ -101,6 +101,8 @@ Network storage remains a temporary compatibility measure rather than an ideal S
 
 When placing the container behind a reverse proxy, configure its request-body limit above the application’s 8 MiB file limit. For NGINX, `client_max_body_size 9m;` accommodates the encrypted envelope and AES-GCM overhead. If the proxy rejects an upload with HTTP 413, the browser reports the proxy limit clearly instead of attempting to parse its HTML error page.
 
+If an AWS WAF web ACL is attached to the Application Load Balancer, scope body-inspection rules away from `POST /api/chats/*/messages`. The body is authenticated ciphertext and cannot be meaningfully inspected for application threats; random ciphertext can also match content signatures by chance. Keep URI, header, rate-limit, and other applicable protections enabled. ALB access logs identify WAF rejections with a `403` load-balancer status and `waf` in `actions_executed`; Roomerang marks responses that reached the application with `X-Roomerang-Response: app`.
+
 - Room URLs contain 256 bits of cryptographically random entropy.
 - Rooms expire at their selected duration (ten minutes through one month) and expired rooms are inaccessible.
 - Set `MAXIMUM_DURATION` to `10m`, `30m`, `1h`, `12h`, `1d`, `1w`, or `1m`/`1mo` to limit which expiry choices are offered and accepted. For example, `MAXIMUM_DURATION=1w` prevents rooms longer than one week.

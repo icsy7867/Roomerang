@@ -18,9 +18,11 @@ final class EncryptedAttachmentStore
     public static function stageInput(): array
     {
         $length = $_SERVER['CONTENT_LENGTH'] ?? '';
+        $expectedBytes = null;
         if (is_string($length) && ctype_digit($length) && (int)$length > self::MAX_WIRE_BYTES) {
             throw new \InvalidArgumentException('Invalid encrypted payload or file exceeds 8 MB.');
         }
+        if (is_string($length) && ctype_digit($length)) $expectedBytes = (int)$length;
 
         self::ensureDirectory();
         $path = self::directory() . '/.' . bin2hex(random_bytes(16)) . '.upload';
@@ -48,7 +50,10 @@ final class EncryptedAttachmentStore
                 self::writeAll($output, $chunk);
             }
             if ($bytes < 32 || strlen($nonce) !== 12) throw new \InvalidArgumentException('Invalid encrypted payload.');
-            if (!fflush($output) || (function_exists('fsync') && !fsync($output))) {
+            if ($expectedBytes !== null && $bytes !== $expectedBytes) {
+                throw new \InvalidArgumentException('The encrypted upload was incomplete. Please retry.');
+            }
+            if (!fflush($output)) {
                 throw new \RuntimeException('Could not save the encrypted attachment.');
             }
             fclose($output);
@@ -80,7 +85,6 @@ final class EncryptedAttachmentStore
         if (file_exists($destination) || !rename($stagedPath, $destination)) {
             throw new \RuntimeException('Could not save the encrypted attachment.');
         }
-        @chmod($destination, 0600);
     }
 
     public static function discard(string $path): void
@@ -189,7 +193,14 @@ final class EncryptedAttachmentStore
     public static function path(string $key): string
     {
         self::assertKey($key);
-        return self::directory() . '/' . substr($key, 0, 2) . '/' . substr($key, 2, 2) . '/' . $key . '.blob';
+        $path = self::directory() . '/' . substr($key, 0, 2) . '/' . $key . '.blob';
+        $legacy = self::directory() . '/' . substr($key, 0, 2) . '/' . substr($key, 2, 2) . '/' . $key . '.blob';
+        return is_file($path) || !is_file($legacy) ? $path : $legacy;
+    }
+
+    public static function relativePath(string $key): string
+    {
+        return substr(self::path($key), strlen(self::directory()) + 1);
     }
 
     private static function ensureDirectory(): void

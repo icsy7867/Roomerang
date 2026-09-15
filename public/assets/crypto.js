@@ -56,7 +56,10 @@ window.ChatCrypto = (() => {
     const result=await responseData(response);
     if (!response.ok) {
       if (response.status===413) throw new Error('This upload is larger than the server or reverse proxy allows. Choose a smaller file or increase the proxy request-size limit.');
-      if (response.status===403) throw new Error(result.error || 'You cannot post in this chat. It may be read-only, or your session no longer has access.');
+      if (response.status===403) {
+        if (response.headers.get('X-Roomerang-Response') !== 'app') throw new Error('The upload was rejected before it reached Roomerang (HTTP 403). Check the load balancer or WAF rules for encrypted binary request bodies.');
+        throw new Error(result.error || 'You cannot post in this chat. It may be read-only, or your session no longer has access.');
+      }
       throw new Error(result.error || `Upload failed (HTTP ${response.status}).`);
     }
     return result.message;

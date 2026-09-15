@@ -278,7 +278,7 @@
       }
     } catch (error) {
       downloadFailed = error.name === 'MessageDownloadError';
-      contentError = downloadFailed ? error.message : 'Unable to decrypt this message. Check that you have the correct complete chat link.';
+      contentError = downloadFailed ? error.message : 'Unable to decrypt this message. Its encrypted data may be incomplete, or the chat link may contain the wrong key.';
     }
     const element = document.querySelector('#message-template').content.firstElementChild.cloneNode(true);
     element.dataset.id = message.id;

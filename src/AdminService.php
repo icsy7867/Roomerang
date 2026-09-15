@@ -140,7 +140,7 @@ final class AdminService
                 if (!is_file($path) || filesize($path) !== (int)$file['wire_bytes'] || hash_file('sha256', $path) !== $file['wire_sha256']) {
                     throw new \RuntimeException('An encrypted attachment is missing or damaged; backup was not created.');
                 }
-                $tar->addFile($path, 'files/' . substr($file['storage_key'], 0, 2) . '/' . substr($file['storage_key'], 2, 2) . '/' . $file['storage_key'] . '.blob');
+                $tar->addFile($path, 'files/' . EncryptedAttachmentStore::relativePath($file['storage_key']));
             }
             @unlink($database);
             return $archive;
