@@ -87,7 +87,7 @@ if (str_starts_with($path, '/admin')) {
     if (!$session) {
         http_response_code($error === '' ? 401 : 403);
         ?>
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Roomerang administration</title><link rel="stylesheet" href="/assets/app.css?v=roomerang-2"><link rel="stylesheet" href="/assets/admin.css?v=roomerang-1"></head><body><main class="panel admin-login"><div class="brand"><img class="brand-logo" src="/assets/roomerang.svg?v=1" alt=""><h1>Roomerang</h1></div><h2>Administration</h2><form method="post" action="/admin/login"><label>Password<input type="password" name="password" autocomplete="current-password" required autofocus></label><button class="primary" type="submit">Sign in</button><?php if ($error !== ''): ?><p class="error"><?= $escape($error) ?></p><?php endif ?></form></main></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Roomerang administration</title><link rel="stylesheet" href="/assets/app.css?v=roomerang-2"><link rel="stylesheet" href="/assets/admin.css?v=roomerang-4"></head><body><main class="panel admin-login"><div class="brand"><img class="brand-logo" src="/assets/roomerang.svg?v=1" alt=""><h1>Roomerang</h1></div><h2>Administration</h2><form method="post" action="/admin/login"><label>Password<input type="password" name="password" autocomplete="current-password" required autofocus></label><button class="primary" type="submit">Sign in</button><?php if ($error !== ''): ?><p class="error"><?= $escape($error) ?></p><?php endif ?></form></main></body></html>
         <?php
         exit;
     }
@@ -105,7 +105,7 @@ if (str_starts_with($path, '/admin')) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Roomerang administration</title>
   <link rel="stylesheet" href="/assets/app.css?v=roomerang-2">
-  <link rel="stylesheet" href="/assets/admin.css?v=roomerang-3">
+  <link rel="stylesheet" href="/assets/admin.css?v=roomerang-4">
 </head>
 <body>
   <main class="panel admin-panel">
