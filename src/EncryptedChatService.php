@@ -19,6 +19,8 @@ final class EncryptedChatService
         try {
             $room = (new ChatService($this->db))->create($duration, $history);
             $this->db->prepare('INSERT INTO encrypted_rooms(room_id) SELECT id FROM rooms WHERE token=?')->execute([$room['token']]);
+            $this->db->exec('INSERT INTO application_metrics(id, total_chats, total_attachments) VALUES (1, 1, 0)
+                ON CONFLICT(id) DO UPDATE SET total_chats = total_chats + 1');
             $this->db->commit();
             return $room;
         } catch (\Throwable $e) { $this->db->rollBack(); throw $e; }
@@ -133,6 +135,8 @@ final class EncryptedChatService
             $messageId = (int)$this->db->lastInsertId();
             $file = $this->db->prepare('INSERT INTO encrypted_message_files(message_id,storage_key,wire_bytes,wire_sha256,created_at) VALUES (?,?,?,?,?)');
             $file->execute([$messageId, $key, $staged['bytes'], $staged['sha256'], $now]);
+            $this->db->exec('INSERT INTO application_metrics(id, total_chats, total_attachments) VALUES (1, 0, 1)
+                ON CONFLICT(id) DO UPDATE SET total_attachments = total_attachments + 1');
             ServerTiming::report('attachment-db-write', (hrtime(true) - $databaseStarted) / 1e6);
             ServerTiming::measure('attachment-db-commit', fn () => $this->db->commit());
             return ['id'=>$messageId,'created_at'=>$now,'display_name'=>$member['display_name'],'is_mine'=>true];

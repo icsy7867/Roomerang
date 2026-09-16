@@ -50,7 +50,7 @@ docker run --rm -p 8080:8080 \
 
 ## Administration and backups
 
-Set `ADMIN_PASSWORD` or `ADMIN_PASSWORD_HASH` to enable `/admin`; without either, the route returns 404. The console reports total, active, expired, and empty chat counts plus maximum and average message counts for active chats. It also exposes integrity status, expiry pruning, a global maintenance mode, and a consistent backup archive download.
+Set `ADMIN_PASSWORD` or `ADMIN_PASSWORD_HASH` to enable `/admin`; without either, the route returns 404. The console reports lifetime totals for chats and attachments, active, expired, and empty chat counts, the storage used by the application data directory, plus maximum and average message counts for active chats. Lifetime counters continue increasing after expired rooms and their attachments are pruned. Existing deployments seed these counters from rows retained at their first upgrade, before startup pruning runs. It also exposes integrity status, expiry pruning, a global maintenance mode, and a consistent backup archive download.
 
 Maintenance mode leaves existing joined members able to read rooms but prevents room creation, new joins, messages, and room moderation. Enable it before downloading a backup. Room expiry remains enforced while maintenance mode is on.
 

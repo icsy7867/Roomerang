@@ -32,6 +32,7 @@ $shared=$service->shared($share['token']);
 check($shared['id']===$second['id'] && strlen($service->sharedContent($shared))===44,'shared message exposes only its encrypted bytes');
 try {$service->share($r,$b,$first['id']); throw new LogicException('history share leak');} catch(RuntimeException $e) {check($e->getMessage()==='Message unavailable.','history boundary prevents sharing earlier ciphertext');}
 $other=$service->room($service->create('10m','all')['token']);
+check((int)$db->query('SELECT total_chats FROM application_metrics WHERE id=1')->fetchColumn() === 2, 'lifetime chat counter increments for each room');
 $c=$service->join($other,'session-c','C');
 try {$service->content($other,$c,$second['id']); throw new LogicException('room leak');} catch(RuntimeException $e) {check($e->getMessage()==='Message unavailable.','cross-room content denied');}
 try {$service->post($r,$a,random_bytes(12),str_repeat('x',App\EncryptedChatService::MAX_CIPHERTEXT+1)); throw new LogicException('size limit');} catch(InvalidArgumentException) {echo "PASS server size limit\n";}
@@ -47,5 +48,7 @@ check(array_column($service->messages($other,$c,(int)$ids[57]),'id') === array_s
 $db->exec('UPDATE rooms SET expires_at=0');
 try {$service->room($r['token']); throw new LogicException('expired room');} catch(RuntimeException $e) {check(str_contains($e->getMessage(),'expired'),'expiry denied');}
 try {$service->shared($share['token']); throw new LogicException('expired share');} catch(RuntimeException $e) {check(str_contains($e->getMessage(),'expired'),'shared message expires with parent room');}
+App\EncryptedAttachmentStore::pruneExpired($db);
+check((int)(new App\AdminService($db))->statistics()['total_chats'] === 2, 'lifetime chat counter survives expired-room pruning');
 check((int)$db->query('SELECT COUNT(*) FROM messages')->fetchColumn()===0,'no plaintext message rows');
 echo "All encrypted storage checks passed.\n";

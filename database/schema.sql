@@ -94,6 +94,14 @@ CREATE TABLE IF NOT EXISTS system_settings (
 );
 INSERT OR IGNORE INTO system_settings(key, value) VALUES ('maintenance_mode', '0');
 
+-- Lifetime counters deliberately survive expired-room pruning. The singleton is
+-- seeded from existing rows by scripts/init.php when upgrading a deployment.
+CREATE TABLE IF NOT EXISTS application_metrics (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  total_chats INTEGER NOT NULL DEFAULT 0 CHECK (total_chats >= 0),
+  total_attachments INTEGER NOT NULL DEFAULT 0 CHECK (total_attachments >= 0)
+);
+
 CREATE TABLE IF NOT EXISTS admin_sessions (
   session_hash TEXT PRIMARY KEY,
   csrf_token TEXT NOT NULL,

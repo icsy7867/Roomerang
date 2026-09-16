@@ -91,7 +91,7 @@ if (str_starts_with($path, '/admin')) {
         <?php
         exit;
     }
-    $stats = $integrityFailure === null ? $admin->statistics() : ['total_chats'=>0,'active_chats'=>0,'expired_chats'=>0,'empty_chats'=>0,'maximum_messages'=>0,'average_messages'=>0,'maintenance_mode'=>true,'integrity'=>$integrityFailure,'journal_mode'=>'Unavailable'];
+    $stats = $integrityFailure === null ? $admin->statistics() : ['total_chats'=>0,'total_attachments'=>0,'storage_bytes'=>0,'active_chats'=>0,'expired_chats'=>0,'empty_chats'=>0,'maximum_messages'=>0,'average_messages'=>0,'maintenance_mode'=>true,'integrity'=>$integrityFailure,'journal_mode'=>'Unavailable'];
     $notice = (string)($_GET['notice'] ?? '');
     if ($notice === 'maintenance') $notice = 'Maintenance mode updated.';
     elseif (preg_match('/^pruned-([0-9]+)$/', $notice, $match)) $notice = $match[1] . ' expired chat(s) removed.';
@@ -120,6 +120,8 @@ if (str_starts_with($path, '/admin')) {
       <dl class="admin-stats">
         <div><dt>Total chats</dt><dd><?= $stats['total_chats'] ?></dd></div>
         <div><dt>Active chats</dt><dd><?= $stats['active_chats'] ?></dd></div>
+        <div><dt>Total attachments</dt><dd><?= $stats['total_attachments'] ?></dd></div>
+        <div><dt>Data storage used</dt><dd><?= $escape(AdminService::formatBytes((int)$stats['storage_bytes'])) ?></dd></div>
         <div><dt>Expired chats awaiting prune</dt><dd><?= $stats['expired_chats'] ?></dd></div>
         <div><dt>Chats with no messages</dt><dd><?= $stats['empty_chats'] ?></dd></div>
         <div><dt>Most messages in an active chat</dt><dd><?= $stats['maximum_messages'] ?></dd></div>

@@ -85,12 +85,12 @@ final class AdminService
     {
         $now = time();
         $counts = $this->db()->prepare("SELECT
-            COUNT(*) AS total_chats,
             SUM(CASE WHEN expires_at > ? THEN 1 ELSE 0 END) AS active_chats,
             SUM(CASE WHEN expires_at <= ? THEN 1 ELSE 0 END) AS expired_chats
             FROM rooms");
         $counts->execute([$now, $now]);
         $result = $counts->fetch();
+        $metrics = $this->db()->query('SELECT total_chats, total_attachments FROM application_metrics WHERE id = 1')->fetch() ?: ['total_chats' => 0, 'total_attachments' => 0];
         $messages = $this->db()->prepare("WITH room_counts AS (
               SELECT rooms.id, rooms.expires_at,
                 (SELECT COUNT(*) FROM messages WHERE room_id = rooms.id) +
@@ -104,7 +104,9 @@ final class AdminService
         $messages->execute([$now, $now]);
         $messageResult = $messages->fetch();
         return [
-            'total_chats' => (int)$result['total_chats'],
+            'total_chats' => (int)$metrics['total_chats'],
+            'total_attachments' => (int)$metrics['total_attachments'],
+            'storage_bytes' => $this->dataStorageBytes(),
             'active_chats' => (int)$result['active_chats'],
             'expired_chats' => (int)$result['expired_chats'],
             'empty_chats' => (int)$messageResult['empty_chats'],
@@ -114,6 +116,35 @@ final class AdminService
             'integrity' => (string)$this->db()->query('PRAGMA integrity_check')->fetchColumn(),
             'journal_mode' => strtoupper((string)$this->db()->query('PRAGMA journal_mode')->fetchColumn()),
         ];
+    }
+
+    /** Return the allocated bytes of regular files in the application's data directory. */
+    private function dataStorageBytes(): int
+    {
+        $directory = dirname(Database::path());
+        if (!is_dir($directory)) return 0;
+
+        $bytes = 0;
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::LEAVES_ONLY,
+        );
+        foreach ($iterator as $entry) {
+            if (!$entry->isLink() && $entry->isFile()) $bytes += $entry->getSize();
+        }
+        return $bytes;
+    }
+
+    public static function formatBytes(int $bytes): string
+    {
+        $units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+        $value = max(0, $bytes);
+        $unit = 0;
+        while ($value >= 1024 && $unit < count($units) - 1) {
+            $value /= 1024;
+            $unit++;
+        }
+        return $unit === 0 ? $value . ' ' . $units[$unit] : number_format($value, 2) . ' ' . $units[$unit];
     }
 
     public function pruneExpired(): int

@@ -23,6 +23,11 @@ try {
         $db->exec('ALTER TABLE encrypted_members ADD COLUMN last_seen_at INTEGER NOT NULL DEFAULT 0');
     }
     $db->exec('UPDATE encrypted_rooms SET master_session_hash=(SELECT session_hash FROM encrypted_members WHERE encrypted_members.room_id=encrypted_rooms.room_id ORDER BY rowid LIMIT 1) WHERE master_session_hash IS NULL');
+    // Seed lifetime counters before pruning old rooms. Once present, the row is
+    // updated only by successful room and attachment creation, so pruning never
+    // reduces the totals.
+    $db->exec('INSERT OR IGNORE INTO application_metrics(id, total_chats, total_attachments)
+        SELECT 1, (SELECT COUNT(*) FROM rooms), (SELECT COUNT(*) FROM encrypted_message_files)');
     App\EncryptedAttachmentStore::pruneExpired($db);
     $check = $db->query('PRAGMA integrity_check')->fetchColumn();
     if ($check !== 'ok') {

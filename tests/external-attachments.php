@@ -47,6 +47,8 @@ try {
     check((int)$db->query('SELECT length(ciphertext) FROM encrypted_messages WHERE id=' . (int)$message['id'])->fetchColumn() === 0, 'attachment ciphertext is absent from SQLite');
     check(is_file(App\EncryptedAttachmentStore::path($file['storage_key'])), 'attachment ciphertext is promoted to opaque file storage');
     check(substr_count(App\EncryptedAttachmentStore::relativePath($file['storage_key']), '/') === 1, 'new attachments use one EFS shard directory');
+    $stats = (new App\AdminService($db))->statistics();
+    check($stats['total_attachments'] === 1 && $stats['storage_bytes'] >= strlen($wire), 'attachment and data-storage metrics include a successful upload');
 
     $duplicatePath = App\EncryptedAttachmentStore::directory() . '/.duplicate.upload';
     $duplicateWire = substr($wire, 0, 12) . random_bytes(4096);
@@ -96,6 +98,7 @@ try {
     $db->exec('UPDATE rooms SET expires_at = 0');
     check(App\EncryptedAttachmentStore::pruneExpired($db) === 1, 'expired room is pruned');
     check(!is_file(App\EncryptedAttachmentStore::path($file['storage_key'])), 'expiry pruning removes encrypted attachment file');
+    check((new App\AdminService($db))->statistics()['total_attachments'] === 1, 'lifetime attachment counter survives expiry pruning');
     App\EncryptedAttachmentStore::reset();
     check(!is_dir(App\EncryptedAttachmentStore::directory()), 'attachment reset removes encrypted attachment storage');
     echo "All external attachment checks passed.\n";
